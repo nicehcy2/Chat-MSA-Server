@@ -1,0 +1,131 @@
+version: '3.0'
+
+# 모든 Kafka가 동일한 네트워크 내에서 실행
+# 서비스 간의 통신을 격리하고, 필요한 경우 외부 접근을 제한 가능
+networks:
+  kafka_network:
+
+# 각 Kafka 브로커는 별도의 Docker 볼륨을 사용하여 데이터 저장소를 유지
+# Kafka의 로그 및 데이터 파일이 Docker 컨테이너가 재시작될 때도 유지되도록 한다.
+volumes:
+  Kafka00:
+    driver: local # 도커가 기본으로 제공하는 로컬 드라이버를 사용
+  Kafka01:
+    driver: local
+  Kafka02:
+    driver: local
+
+services:
+  Kafka00Service:
+    image: bitnami/kafka:latest
+    restart: unless-stopped # 컨테이너가 중지되지 않는한 항상 재시작
+    container_name: Kafka00Container
+    ports:
+      - '9092:9092' # 내부 네트워크 통신을 위한 PLAINTEXT 리스너
+      - '10000:10000' # 외부 접근을 위한 EXTERNAL 리스너
+    environment:
+      # KRaft 설정
+      - KAFKA_ENABLE_KRAFT=yes # KRaft 모드 활성화, Zookeeper 없이 Kafka 클러스터를 운영 가능
+      - KAFKA_CFG_BROKER_ID=0 # 브로커 ID
+      - KAFKA_CFG_NODE_ID=0 # 노드 ID
+      - KAFKA_KRAFT_CLUSTER_ID=HsDBs9l6UUmQq7Y5E6bNlw # 고유 클러스터 ID, 클러스터에 속한 모든 브로커에 동일하게 설정
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@Kafka00Service:9093,1@Kafka01Service:9093,2@Kafka02Service:9093 # 클러스터 내에 컨트롤러들에 대한 정보를 정의. 각 컨트롤러는 다른 서비스의 컨트롤러와 통신하여 클러스터를 관리
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      # 리스너 설정
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true # Kafka 브로커가 자동으로 토픽을 생성할지 여부를 결정하는 설정
+      - ALLOW_PLAINTEXT_LISTENER=yes # 평문 통신을 허용하는지 여부
+      # 브로커가 사용할 리스너 설정
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:10000
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://Kafka00Service:9092,EXTERNAL://localhost:10000
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      # 클러스터 설정, 클러스터 내 토픽 및 로그 복제 설정을 정의하여 가용성을 보장
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=2
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=2
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+    networks:
+      - kafka_network
+    volumes:
+      - Kafka00:/bitnami/kafka
+
+  Kafka01Service:
+    image: bitnami/kafka:latest
+    restart: unless-stopped
+    container_name: Kafka01Container
+    ports:
+      - '9093:9092' # 내부 네트워크 통신을 위한 PLAINTEXT 리스너
+      - '10001:10000' # 외부 접근을 위한 EXTERNAL 리스너
+    environment:
+      # KRaft 설정
+      - KAFKA_ENABLE_KRAFT=yes # KRaft 모드 활성화
+      - KAFKA_CFG_BROKER_ID=1
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_KRAFT_CLUSTER_ID=HsDBs9l6UUmQq7Y5E6bNlw # 고유 클러스터 ID, 모든 브로커에 동일하게 설정
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@Kafka00Service:9093,1@Kafka01Service:9093,2@Kafka02Service:9093
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      # 리스너 설정
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:10000
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://Kafka01Service:9092,EXTERNAL://localhost:10001
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      # 클러스터 설정
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=2
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=2
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+    networks:
+      - kafka_network
+    volumes:
+      - Kafka01:/bitnami/kafka
+
+  Kafka02Service:
+    image: bitnami/kafka:latest
+    restart: unless-stopped
+    container_name: Kafka02Container
+    ports:
+      - '9094:9092' # 내부 네트워크 통신을 위한 PLAINTEXT 리스너
+      - '10002:10000' # 외부 접근을 위한 EXTERNAL 리스너
+    environment:
+      # KRaft 설정
+      - KAFKA_ENABLE_KRAFT=yes # KRaft 모드 활성화
+      - KAFKA_CFG_BROKER_ID=2
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_KRAFT_CLUSTER_ID=HsDBs9l6UUmQq7Y5E6bNlw # 고유 클러스터 ID, 모든 브로커에 동일하게 설정
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@Kafka00Service:9093,1@Kafka01Service:9093,2@Kafka02Service:9093
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      # 리스너 설정
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:10000
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://Kafka02Service:9092,EXTERNAL://localhost:10002
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      # 클러스터 설정
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=2
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=2
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+    networks:
+      - kafka_network
+    volumes:
+      - Kafka02:/bitnami/kafka
+
+  KafkaWebUiService:
+    image: provectuslabs/kafka-ui:latest
+    restart: unless-stopped
+    container_name: KafkaWebUiContainer
+    ports:
+      - '8085:8080' # 호스트의 8085 포트를 컨테이너의 8080 포트에 바인딩
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=Local-Kraft-Cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=Kafka00Service:9092,Kafka01Service:9092,Kafka02Service:9092 # 초기 브로커 주소 목록 설정, 클러스터의 메타데이터를 가져오고, 클러스터 상태를 모니터링
+      - DYNAMIC_CONFIG_ENABLED=true # 동적 설정 변경 허용
+      - KAFKA_CLUSTERS_0_AUDIT_TOPICAUDITENABLED=true # 토픽 관련 활동을 감사할 수 있도록 설정
+      - KAFKA_CLUSTERS_0_AUDIT_CONSOLEAUDITENABLED=true # 콘솔에서 수행되는 활동을 감사할 수 있도록 설정
+    # 서비스가 실행된 후에 시작되도록 설정
+    depends_on:
+      - Kafka00Service
+      - Kafka01Service
+      - Kafka02Service
+    networks:
+      - kafka_network
