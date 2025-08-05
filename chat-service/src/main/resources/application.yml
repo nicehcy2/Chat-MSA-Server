@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: Chat Service
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3307/chatdb
+    username: guest
+    password: guest
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+  # Kafka ?? ??
+  kafka:
+    bootstrap-servers: localhost:10000,localhost:10001,localhost:10002 # ??? ?? ??
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: chat-messages-group
+      auto-offset-reset: earliest
