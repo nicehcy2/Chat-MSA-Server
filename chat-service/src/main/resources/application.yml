@@ -1,3 +1,5 @@
+CHAT_NODE_ID: chat-messages-group1 # 컨테이너/vm마다 고유값 주입
+
 spring:
   application:
     name: Chat Service
