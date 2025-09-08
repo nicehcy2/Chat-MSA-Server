@@ -1,6 +1,6 @@
 package com.nicehcy2.homeservice.entity;
 
-import com.nicehcy.chatservice.common.BaseEntity;
+import com.nicehcy2.homeservice.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

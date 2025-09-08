@@ -1,6 +1,5 @@
 package com.nicehcy.chatservice.config;
 
-import com.nicehcy.chatservice.config.socket.SocketSessionInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -13,14 +12,6 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketBrokerConfig implements WebSocketMessageBrokerConfigurer {
-
-    @Autowired
-    private SocketSessionInterceptor socketSessionInterceptor;
-
-    @Override
-    public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(socketSessionInterceptor);
-    }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
