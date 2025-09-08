@@ -16,7 +16,6 @@ public class WebSocketBrokerConfig implements WebSocketMessageBrokerConfigurer {
 
         // 웹 소켓 통신이 /ws으로 도착할 때, 해당 통신이 웹 소켓 통신 중 stomp 통신인 것을 확인하고, 이를 연결.
         registry.addEndpoint("/ws")
-                //.addInterceptors(new HttpSessionHandshakeInterceptor())
                 .setAllowedOrigins("*");
                 // .withSockJS(); // Jmeter 테스트 시 주석 제거
     }
