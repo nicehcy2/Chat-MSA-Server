@@ -2,7 +2,7 @@ CHAT_NODE_ID: chat-messages-group1 # 컨테이너/vm마다 고유값 주입
 
 spring:
   application:
-    name: Chat Service
+    name: chat-service
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -33,3 +33,15 @@ spring:
       properties:
         spring.json.trusted.packages: com.nicehcy.chatservice.dto
         spring.json.value.default.type: com.nicehcy.chatservice.dto.MessageDto
+
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://localhost:8070/eureka/
+
+server:
+  port: 8080

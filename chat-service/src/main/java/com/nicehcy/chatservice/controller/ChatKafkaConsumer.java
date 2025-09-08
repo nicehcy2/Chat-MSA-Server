@@ -21,7 +21,6 @@ public class ChatKafkaConsumer {
 
         log.info("[5/6] Kafka 리스너 수신 메시지 전체 내용: {}", messageDto);
 
-        // TODO: 구독자가 없으면 메시지를 전송하지 않음(낭비 절감)
         // if (해당 서버에 전송할 채팅방의 구독자가 한 명 이상 있다면) -> 전송
 
         final String destination = "/sub/chatroom" + messageDto.chatRoomId();
