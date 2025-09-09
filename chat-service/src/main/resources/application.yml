@@ -1,5 +1,6 @@
 CHAT_NODE_ID: chat-messages-group1 # 컨테이너/vm마다 고유값 주입
 ONLINE_KEY_PREFIX: 'socket:online:1:'
+OUTBOX_KAFKA_TOPIC: 'outbox_db_server1.testdb.outbox'
 
 spring:
   application:

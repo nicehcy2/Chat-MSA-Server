@@ -1,7 +1,9 @@
 package com.nicehcy.chatservice.service;
 
 import com.nicehcy.chatservice.dto.MessageDto;
+import com.nicehcy.chatservice.dto.converter.MessageDtoConverter;
 import com.nicehcy.chatservice.entity.Outbox;
+import com.nicehcy.chatservice.repository.MessageRepository;
 import com.nicehcy.chatservice.repository.OutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,7 @@ public class ChatService {
 
     private final OutboxRepository outboxRepository;
     private final KafkaTemplate<String, MessageDto> kafkaTemplate;
+    private final MessageRepository messageRepository;
 
     private final String KAFKA_TOPIC = "chat-topic";
 
@@ -38,6 +41,16 @@ public class ChatService {
         final String chatRoomId = message.chatRoomId().toString();
         kafkaTemplate.send(KAFKA_TOPIC, chatRoomId, message);
         log.info("[4/6] Kafka에 채팅 메시지 전송 - topic: {}, chatRoomId: {}, messageId: {}", KAFKA_TOPIC, chatRoomId, message.id());
+    }
+
+    @Transactional
+    public void saveMessage(final MessageDto messageDto) {
+
+        log.info("[1/2] 채팅 메시지 저장 시작");
+
+        messageRepository.save(MessageDtoConverter.toMessage(messageDto));
+
+        log.info("[2/2] 채팅 메시지 저장 완료");
     }
 
     private void saveMessageToOutbox(MessageDto messageDto) {

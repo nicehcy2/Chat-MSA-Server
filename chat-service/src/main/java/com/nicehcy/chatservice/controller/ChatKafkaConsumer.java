@@ -22,7 +22,6 @@ import java.util.List;
 public class ChatKafkaConsumer {
 
     private final SimpMessagingTemplate messagingTemplate;
-    private final SocketConnectionTracker socketConnectionTracker;
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
     private final RedisTemplate<String, String> redisTemplate;
     @Value("${ONLINE_KEY_PREFIX}") private String ONLINE_KEY_PREFIX;
