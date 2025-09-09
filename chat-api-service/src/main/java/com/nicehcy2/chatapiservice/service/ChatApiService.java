@@ -25,15 +25,11 @@ public class ChatApiService {
         List<ServiceInstance> instances = discoveryClient.getInstances("chat-service");
 
         if (instances.size() == 0) {
-            System.out.println("null입니다!");
             return null;
         }
         // TODO: get(0) 로직 말고 서버를 선택하는 조건을 추가해줘야 한다.
         String nodeId = instances.get(0).getInstanceId();
         String serviceUri = String.valueOf(instances.get(0).getUri());
-
-        System.out.println(nodeId);
-        System.out.println(serviceUri);
 
         return ChatServerInfoResponse.builder()
                 .nodeId(nodeId)

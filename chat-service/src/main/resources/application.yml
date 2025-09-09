@@ -1,4 +1,5 @@
 CHAT_NODE_ID: chat-messages-group1 # 컨테이너/vm마다 고유값 주입
+ONLINE_KEY_PREFIX: 'socket:online:1:'
 
 spring:
   application:
@@ -9,6 +10,11 @@ spring:
     url: jdbc:mysql://localhost:3307/chatdb
     username: guest
     password: guest
+
+  data:
+    redis:
+      host: localhost # redis_container
+      port: 6380
 
   jpa:
     properties:
