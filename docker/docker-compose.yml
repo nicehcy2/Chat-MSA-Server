@@ -161,3 +161,35 @@ services:
     command: [ "redis-server", "--appendonly", "yes" ]
     networks:
       - kafka_network
+
+  debezium:
+    image: debezium/connect:3.0.0.Final
+    ports:
+      - "8083:8083"
+    depends_on:
+      - mysql
+      - Kafka00Service
+      - Kafka01Service
+      - Kafka02Service
+    environment:
+      - BOOTSTRAP_SERVERS=Kafka00Service:9092,Kafka01Service:9092,Kafka02Service:9092
+      - GROUP_ID=debezium-00
+      - CONFIG_STORAGE_TOPIC=DEBEZIUM_CONNECT_CONFIGS
+      - OFFSET_STORAGE_TOPIC=DEBEZIUM_CONNECT_OFFSETS
+      - STATUS_STORAGE_TOPIC=DEBEZIUM_CONNECT_STATUSES
+      - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+      - CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+    networks:
+      - kafka_network
+
+  debezium-ui:
+    image: debezium/debezium-ui:latest
+    container_name: debezium-ui
+    ports:
+      - "9080:8080"
+    depends_on:
+      - debezium
+    environment:
+      - KAFKA_CONNECT_URIS=http://debezium:8083
+    networks:
+      - kafka_network
