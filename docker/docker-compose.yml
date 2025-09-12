@@ -35,7 +35,7 @@ services:
       - KAFKA_KRAFT_CLUSTER_ID=HsDBs9l6UUmQq7Y5E6bNlw # 고유 클러스터 ID, 클러스터에 속한 모든 브로커에 동일하게 설정
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@Kafka00Service:9093,1@Kafka01Service:9093,2@Kafka02Service:9093 # 클러스터 내에 컨트롤러들에 대한 정보를 정의. 각 컨트롤러는 다른 서비스의 컨트롤러와 통신하여 클러스터를 관리
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      # 리스너 설정
+      # 리스너 설 정
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true # Kafka 브로커가 자동으로 토픽을 생성할지 여부를 결정하는 설정
       - ALLOW_PLAINTEXT_LISTENER=yes # 평문 통신을 허용하는지 여부
       # 브로커가 사용할 리스너 설정
@@ -191,5 +191,40 @@ services:
       - debezium
     environment:
       - KAFKA_CONNECT_URIS=http://debezium:8083
+    networks:
+      - kafka_network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: keycloak
+    restart: unless-stopped
+    ports:
+      - '7070:8080' # Keycloak 콘솔 http://localhost:8080
+    environment:
+      # 관리자 계정 (운영에서는 Secret/변수로 교체)
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+
+      # DB 설정: MySQL
+      KC_DB: mysql
+      KC_DB_USERNAME: guest
+      KC_DB_PASSWORD: guest
+      KC_DB_URL_HOST: mysql
+      KC_DB_URL_PORT: 3306
+      KC_DB_URL_DATABASE: keycloak    # 아래 init SQL로 미리 생성
+      KC_HOSTNAME_URL: http://localhost:7070
+      KC_HOSTNAME_ADMIN_URL: http://localhost:7070
+      # 호스트네임 (게이트웨이 앞단에서 쓰면 도메인으로 세팅 권장)
+      # KC_HOSTNAME: localhost
+      # 데모 환경은 HTTP 허용(운영은 반드시 프록시 뒤 HTTPS)
+      KC_HTTP_ENABLED: 'true'
+      # 리버스 프록시(게이트웨이) 뒤라면 'edge' 권장
+      # KC_PROXY: edge
+    command:
+      - start
+      # realm 자동 import 하고 싶다면 예시:
+      # - --import-realm
+    depends_on:
+      - mysql
     networks:
       - kafka_network
