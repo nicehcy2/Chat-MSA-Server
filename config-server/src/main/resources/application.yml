@@ -7,8 +7,8 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/nicehcy2/Chat-MSA-Server.git
-          search-paths: config-server
+          uri: "https://github.com/nicehcy2/Chat-MSA-Server.git"
+          search-paths: "config-server/src/main/resources/config"
 
 server:
   port: 7071
