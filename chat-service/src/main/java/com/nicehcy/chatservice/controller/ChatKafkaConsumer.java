@@ -36,7 +36,7 @@ public class ChatKafkaConsumer {
         List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findByChatRoomId(messageDto.chatRoomId());
         List<Long> userIds = memberships.stream()
                 .map(ChatRoomMembership::getUserId)
-                .filter(uid -> !uid.equals(messageDto.senderId()))
+                // .filter(uid -> !uid.equals(messageDto.senderId()))
                 .toList();
 
         if (userIds.isEmpty()) return;
@@ -57,6 +57,10 @@ public class ChatKafkaConsumer {
             }
         }
 
+        final String destination = "/sub/chatroom" + messageDto.chatRoomId();
+        messagingTemplate.convertAndSend(destination, messageDto);
+        log.info("[6/6] STOMP over WebSocket을 통해 메시지 전송");
+        /*
         if (onlines.isEmpty()) {
             log.info("All User is offline. FCM push triggered."); // TODO: FCM 전송 로직 추가
         }
@@ -65,5 +69,7 @@ public class ChatKafkaConsumer {
             messagingTemplate.convertAndSend(destination, messageDto);
             log.info("[6/6] STOMP over WebSocket을 통해 메시지 전송");
         }
+
+         */
     }
 }

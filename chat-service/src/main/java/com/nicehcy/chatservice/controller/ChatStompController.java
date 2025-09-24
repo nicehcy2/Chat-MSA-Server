@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,5 +31,11 @@ public class ChatStompController {
             @RequestBody MessageDto messageDto){
 
         chatService.sendMessage(messageDto); // 메시지 전송
+    }
+
+    @GetMapping("/test")
+    public String test() {
+        System.out.println("test!");
+        return "Test!";
     }
 }
