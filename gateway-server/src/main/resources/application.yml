@@ -1,0 +1,10 @@
+spring:
+  config:
+    import: "configserver:"
+  application:
+    name: gateway-server
+  profiles:
+    active: default
+  cloud:
+    config:
+      uri: http://localhost:7071
