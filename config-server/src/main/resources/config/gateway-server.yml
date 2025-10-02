@@ -13,7 +13,7 @@ spring:
 management:
   endpoint:
     gateway:
-      enabled: true
+      enabled: unrestricted
     web:
       exposure:
         include: gateway
