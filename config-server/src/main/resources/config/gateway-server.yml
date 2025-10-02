@@ -6,17 +6,20 @@ spring:
     gateway:
       server:
         webflux:
-          discovery.locator:
-            enabled: true
-            lowerCaseServiceId: true
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
 
 management:
-  endpoint:
-    gateway:
-      access: unrestricted
+  endpoints:
     web:
       exposure:
         include: gateway
+  endpoint:
+    gateway:
+      access: unrestricted
+
 
 eureka:
   instance:
