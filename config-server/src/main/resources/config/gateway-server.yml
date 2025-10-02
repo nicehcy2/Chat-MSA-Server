@@ -12,9 +12,11 @@ spring:
 
 management:
   endpoints:
+    gateway:
+      enabled: true
     web:
       exposure:
-        include: health,info,metrics,gateway,gatewaymvc
+        include: gateway
 
 eureka:
   instance:
