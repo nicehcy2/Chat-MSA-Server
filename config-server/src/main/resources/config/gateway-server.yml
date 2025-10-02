@@ -4,9 +4,17 @@ server:
 spring:
   cloud:
     gateway:
-      discovery.locator:
-        enable: true
-        lowerCaseServiceId: true
+      server:
+        webflux:
+          discovery.locator:
+            enabled: true
+            lowerCaseServiceId: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway,gatewaymvc
 
 eureka:
   instance:
