@@ -28,6 +28,10 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// Guava + 내부 future failure 접근 클래스가 들어있는 별도 모듈
+	implementation 'com.google.guava:guava:33.3.1-jre'
+	implementation 'com.google.guava:failureaccess:1.0.2'
 }
 
 dependencyManagement {
