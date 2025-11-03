@@ -58,6 +58,12 @@ dependencies {
 
 	/* TSID Generator */
 	implementation 'com.github.f4b6a3:tsid-creator:5.2.6'
+
+	/* 스프링 클라우드 슬루스 대체 -> Micrometer Tracing */
+	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+
+	/* 로그스태시 인코더 추가 */
+	implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
 }
 
 dependencyManagement {

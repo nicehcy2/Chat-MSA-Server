@@ -35,7 +35,7 @@ public class ChatStompController {
 
     @GetMapping("/test")
     public String test() {
-        System.out.println("test!");
+        log.info("test() has been called");
         return "Test!";
     }
 }

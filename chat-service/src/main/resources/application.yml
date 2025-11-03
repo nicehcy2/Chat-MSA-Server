@@ -8,3 +8,11 @@ spring:
   cloud:
     config:
       uri: http://localhost:7071
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+    propagation:
+      type: W3C
