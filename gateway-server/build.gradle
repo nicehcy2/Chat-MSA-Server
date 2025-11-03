@@ -25,12 +25,19 @@ ext {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator' // 스프링 액추에이터 (상태 관리, 정보 조회)
 	implementation 'org.springframework.cloud:spring-cloud-starter-config' // 컨피그 클라이언트
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
 
 	implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webflux'
 
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client' // 유레카 클라이언트
 
-	implementation 'io.micrometer:micrometer-tracing-bridge-brave' // 분산 추적 라이브러리 (상관관계 ID)
+	/* 스프링 클라우드 슬루스 대체 -> Micrometer Tracing */
+	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+	implementation "io.micrometer:context-propagation"
+
+	/* 로그스태시 인코더 추가 */
+	implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
