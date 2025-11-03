@@ -64,6 +64,9 @@ dependencies {
 
 	/* 로그스태시 인코더 추가 */
 	implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
+
+	/* Zipkin 리포터(Http 전송) */
+	implementation "io.zipkin.reporter2:zipkin-reporter-brave"
 }
 
 dependencyManagement {
