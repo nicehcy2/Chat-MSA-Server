@@ -302,7 +302,7 @@ services:
     image: nicehcy2/config-server:0.0.1-SNAPSHOT
     container_name: configserver
     ports:
-      - "8071:8071"
+      - "7071:7071"
     networks:
       backend:
         aliases:
