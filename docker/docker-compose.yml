@@ -297,3 +297,26 @@ services:
       backend:
         aliases:
           - "zipkin"
+
+  configserver:
+    image: nicehcy2/config-server:0.0.1-SNAPSHOT
+    container_name: configserver
+    ports:
+      - "8071:8071"
+    networks:
+      backend:
+        aliases:
+          - "configserver"
+
+  eurekaserver:
+    image: nicehcy2/eureka-server:0.0.1-SNAPSHOT
+    container_name: eurekaserver
+    ports:
+      - "8070:8070"
+    depends_on:
+      configserver:
+        condition: service_started
+    networks:
+      backend:
+        aliases:
+          - "eurekaserver"
