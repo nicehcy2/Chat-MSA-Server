@@ -43,3 +43,10 @@ dependencyManagement {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+tasks.named("bootBuildImage") {
+	imageName = "nicehcy2/eureka-server:0.0.1-SNAPSHOT"
+	environment = [
+			"BP_REPRODUCIBLE": "false"
+	]
+}
