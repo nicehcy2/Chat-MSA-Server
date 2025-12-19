@@ -150,7 +150,7 @@ services:
       MYSQL_USER: guest
       MYSQL_PASSWORD: guest
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql마
     networks:
       - kafka_network
 

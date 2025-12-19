@@ -16,7 +16,7 @@ public class FilterUtils {
     public static final String ROUTE_FILTER_TYPE = "route";
 
     public String getCorrelationId(HttpHeaders requestHeaders){
-        if (requestHeaders.get(CORRELATION_ID) !=null) {
+        if (requestHeaders.get(CORRELATION_ID) != null) {
             List<String> header = requestHeaders.get(CORRELATION_ID);
             return header.stream().findFirst().get();
         }

@@ -1,17 +1,17 @@
 package com.nicehcy2.chatapiservice.controller;
 
+import com.nicehcy2.chatapiservice.dto.MessageDto;
 import com.nicehcy2.chatapiservice.dto.ChatServerInfoResponse;
 import com.nicehcy2.chatapiservice.service.ChatApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/chat")
+@RequestMapping("/api/chats")
 public class ChatApiController {
 
     private final ChatApiService chatApiService;
@@ -26,8 +26,10 @@ public class ChatApiController {
         return ResponseEntity.ok(chatApiService.assignChatServer());
     }
 
-    @GetMapping("/test")
-    public String test() {
-        return "test";
+    // 동기화 로직 적용 전 임시 메시지 조회 코드
+    @GetMapping("/{chatRoomId}/messages/test")
+    public ResponseEntity<List<MessageDto>> getChatMessages(@PathVariable Long chatRoomId) {
+
+        return ResponseEntity.ok(chatApiService.getChatMessages(chatRoomId));
     }
 }

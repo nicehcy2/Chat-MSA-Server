@@ -1,6 +1,8 @@
 package com.nicehcy2.chatapiservice.service;
 
 import com.nicehcy2.chatapiservice.dto.ChatServerInfoResponse;
+import com.nicehcy2.chatapiservice.dto.MessageDto;
+import com.nicehcy2.chatapiservice.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -13,6 +15,7 @@ import java.util.List;
 public class ChatApiService {
 
     private final DiscoveryClient discoveryClient;
+    private final MessageRepository messageRepository;
 
     public ChatServerInfoResponse assignChatServer() {
 
@@ -35,6 +38,11 @@ public class ChatApiService {
                 .nodeId(nodeId)
                 .websocketUrl(serviceUri)
                 .build();
+    }
+
+    public List<MessageDto> getChatMessages(Long chatRoomId) {
+
+        return messageRepository.findCustomByChatRoomId(chatRoomId);
     }
 
     /*
