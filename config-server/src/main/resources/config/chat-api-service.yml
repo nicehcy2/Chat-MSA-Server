@@ -1,7 +1,7 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://mysql:3307/chatdb
+    url: jdbc:mysql://mysql:3306/chatdb
     username: guest
     password: guest
   jpa:

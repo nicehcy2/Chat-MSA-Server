@@ -6,14 +6,14 @@ OUTBOX_GROUP_ID: 'chat-outbox-consumers'
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://mysql:3307/chatdb
+    url: jdbc:mysql://mysql:3306/chatdb
     username: guest
     password: guest
 
   data:
     redis:
       host: redis # redis_container
-      port: 6380
+      port: 6379
 
   jpa:
     properties:
@@ -26,7 +26,7 @@ spring:
 
   # Kafka ?? ??
   kafka:
-    bootstrap-servers: Kafka00Service:10000,Kafka01Service:10001,Kafka02Service:10002 # ??? ?? ??
+    bootstrap-servers: Kafka00Service:10000,Kafka01Service:10000,Kafka02Service:10000 # ??? ?? ??
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
