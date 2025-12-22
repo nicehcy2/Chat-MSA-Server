@@ -26,7 +26,7 @@ spring:
 
   # Kafka ?? ??
   kafka:
-    bootstrap-servers: Kafka00Service:10000,Kafka01Service:10000,Kafka02Service:10000 # ??? ?? ??
+    bootstrap-servers: Kafka00Service:9092,Kafka01Service:9092,Kafka02Service:9092 # ??? ?? ??
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
