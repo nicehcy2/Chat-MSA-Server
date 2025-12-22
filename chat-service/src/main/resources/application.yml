@@ -1,10 +1,7 @@
 spring:
   config:
-    import: "configserver:"
+    import: "optional:configserver:http://configserver:7071/"
   application:
     name: chat-service
   profiles:
     active: default
-  cloud:
-    config:
-      uri: http://configserver:7071

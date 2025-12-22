@@ -14,7 +14,7 @@ spring:
       ddl-auto: none
 
   application:
-    name: chat-api-server
+    name: chat-api-service
   security:
     oauth2:
       resourceserver:
