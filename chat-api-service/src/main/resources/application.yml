@@ -2,6 +2,6 @@ spring:
   config:
     import: "optional:configserver:http://configserver:7071"
   application:
-    name: chat-api-service
+    name: chat-service
   profiles:
     active: default

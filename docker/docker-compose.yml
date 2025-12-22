@@ -44,7 +44,7 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes # 평문 통신을 허용하는지 여부
       # 브로커가 사용할 리스너 설정
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:10000
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://Kafka00Service:9092,EXTERNAL://localhost:10000
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://Kafka00Service:9092,EXTERNAL://Kafka00Service:10000
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       # 클러스터 설정, 클러스터 내 토픽 및 로그 복제 설정을 정의하여 가용성을 보장
@@ -53,6 +53,7 @@ services:
       - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
     networks:
       - kafka_network
+      - backend
     volumes:
       - Kafka00:/bitnami/kafka
 
@@ -75,7 +76,7 @@ services:
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
       - ALLOW_PLAINTEXT_LISTENER=yes
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:10000
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://Kafka01Service:9092,EXTERNAL://localhost:10001
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://Kafka01Service:9092,EXTERNAL://Kafka01Service:10001
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       # 클러스터 설정
@@ -84,6 +85,7 @@ services:
       - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
     networks:
       - kafka_network
+      - backend
     volumes:
       - Kafka01:/bitnami/kafka
 
@@ -106,7 +108,7 @@ services:
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
       - ALLOW_PLAINTEXT_LISTENER=yes
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:10000
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://Kafka02Service:9092,EXTERNAL://localhost:10002
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://Kafka02Service:9092,EXTERNAL://Kafka02Service:10002
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       # 클러스터 설정
@@ -115,6 +117,7 @@ services:
       - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
     networks:
       - kafka_network
+      - backend
     volumes:
       - Kafka02:/bitnami/kafka
 
@@ -137,6 +140,7 @@ services:
       - Kafka02Service
     networks:
       - kafka_network
+      - backend
 
   mysql:
     image: mysql:8.0
@@ -150,9 +154,10 @@ services:
       MYSQL_USER: guest
       MYSQL_PASSWORD: guest
     volumes:
-      - mysql_data:/var/lib/mysql마
+      - mysql_data:/var/lib/mysql
     networks:
       - kafka_network
+      - backend
 
   redis:
     image: redis:7.0
@@ -165,6 +170,7 @@ services:
     command: [ "redis-server", "--appendonly", "yes" ]
     networks:
       - kafka_network
+      - backend
 
   debezium:
     image: debezium/connect:3.0.0.Final
@@ -332,8 +338,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      configserver:
-        condition: service_healthy
+      - mysql
+      - configserver
     networks:
       backend:
         aliases:
@@ -345,8 +351,12 @@ services:
     ports:
       - "8180:8180"
     depends_on:
-      configserver:
-        condition: service_healthy
+      - mysql
+      - redis
+      - configserver
+      - Kafka00Service
+      - Kafka01Service
+      - Kafka02Service
     networks:
       backend:
         aliases:

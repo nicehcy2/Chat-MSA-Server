@@ -15,21 +15,21 @@ spring:
 
   application:
     name: chat-api-service
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://keycloak:8080/realms/spmia-realm
-      client:
-        registration:
-          keycloak:
-            authorization-grant-type: client_credentials
-            client-id: ostock
-            client-secret: 0VFvtUzzrORmAVqcgykHSzwiaKc5615O
-            provider: keycloak
-        provider:
-          keycloak:
-            issuer-uri: http://keycloak:8080/realms/spmia-realm
+  #security:
+    #oauth2:
+      #resourceserver:
+        #jwt:
+          #issuer-uri: http://keycloak:8080/realms/spmia-realm
+      #client:
+        #registration:
+          #keycloak:
+            #authorization-grant-type: client_credentials
+            #client-id: ostock
+            #client-secret: 0VFvtUzzrORmAVqcgykHSzwiaKc5615O
+            #provider: keycloak
+        #provider:
+          #keycloak:
+            #issuer-uri: http://keycloak:8080/realms/spmia-realm
 
 server:
   port: 8180
