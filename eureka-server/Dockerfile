@@ -4,6 +4,15 @@ WORKDIR /app
 COPY . .
 RUN gradle build -x test
 
+# Gradle cache only dependency stage
+COPY build.gradle settings.gradle ./
+COPY gradle gradle
+RUN gradle --no-daemon dependencies || true
+
+# Copy source later (cache 유지)
+COPY src src
+RUN gradle --no-daemon build -x test
+
 # Run Stage
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
