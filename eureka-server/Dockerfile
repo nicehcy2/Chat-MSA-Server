@@ -1,8 +1,6 @@
 # Build Stage
 FROM gradle:8.4-jdk17-alpine AS builder
 WORKDIR /app
-COPY . .
-RUN gradle build -x test
 
 # Gradle cache only dependency stage
 COPY build.gradle settings.gradle ./
