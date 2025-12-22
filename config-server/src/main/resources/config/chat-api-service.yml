@@ -19,7 +19,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:7070/realms/spmia-realm
+          issuer-uri: http://keycloak:8080/realms/spmia-realm
       client:
         registration:
           keycloak:
@@ -29,7 +29,7 @@ spring:
             provider: keycloak
         provider:
           keycloak:
-            issuer-uri: http://localhost:7070/realms/spmia-realm
+            issuer-uri: http://keycloak:8080/realms/spmia-realm
 
 server:
   port: 8180
@@ -41,7 +41,7 @@ eureka:
     registerWithEureka: true
     fetchRegistry: true
     serviceUrl:
-      defaultZone: http://eureka:8070/eureka/
+      defaultZone: http://eurekaserver:8070/eureka/
 
 jwt:
   auth:
