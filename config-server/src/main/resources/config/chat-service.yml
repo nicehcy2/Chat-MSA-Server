@@ -6,13 +6,13 @@ OUTBOX_GROUP_ID: 'chat-outbox-consumers'
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3307/chatdb
+    url: jdbc:mysql://mysql:3307/chatdb
     username: guest
     password: guest
 
   data:
     redis:
-      host: localhost # redis_container
+      host: redis # redis_container
       port: 6380
 
   jpa:
@@ -26,7 +26,7 @@ spring:
 
   # Kafka ?? ??
   kafka:
-    bootstrap-servers: localhost:10000,localhost:10001,localhost:10002 # ??? ?? ??
+    bootstrap-servers: Kafka00Service:10000,Kafka01Service:10001,Kafka02Service:10002 # ??? ?? ??
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -46,7 +46,7 @@ eureka:
     registerWithEureka: true
     fetchRegistry: true
     serviceUrl:
-      defaultZone: http://localhost:8070/eureka/
+      defaultZone: http://eurekaserver:8070/eureka/
 
 management:
   tracing:
@@ -57,7 +57,7 @@ management:
       type: W3C
   zipkin:
     tracing:
-      endpoint: http://localhost:9411/api/v2/spans
+      endpoint: http://zipkin:9411/api/v2/spans
 
 server:
   port: 8080
