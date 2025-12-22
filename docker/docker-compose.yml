@@ -299,7 +299,7 @@ services:
           - "zipkin"
 
   configserver:
-    image: nicehcy2/config-server:0.0.1-SNAPSHOT
+    image: configserver:latest
     container_name: configserver
     ports:
       - "7071:7071"
@@ -307,16 +307,47 @@ services:
       backend:
         aliases:
           - "configserver"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7071/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   eurekaserver:
-    image: nicehcy2/eureka-server:0.0.1-SNAPSHOT
+    image: eurekaserver:latest
     container_name: eurekaserver
     ports:
       - "8070:8070"
     depends_on:
       configserver:
-        condition: service_started
+        condition: service_healthy
     networks:
       backend:
         aliases:
           - "eurekaserver"
+
+  chat-service:
+    image: chat-service:latest
+    container_name: chat-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      configserver:
+        condition: service_healthy
+    networks:
+      backend:
+        aliases:
+          - "chat-service"
+
+  chat-api-service:
+    image: chat-api-service:latest
+    container_name: chat-api-service
+    ports:
+      - "8180:8180"
+    depends_on:
+      configserver:
+        condition: service_healthy
+    networks:
+      backend:
+        aliases:
+          - "chat-api-service"
