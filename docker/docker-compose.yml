@@ -313,20 +313,12 @@ services:
       backend:
         aliases:
           - "configserver"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7071/actuator/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
 
   eurekaserver:
     image: eurekaserver:latest
     container_name: eurekaserver
     ports:
       - "8070:8070"
-    depends_on:
-      configserver:
-        condition: service_healthy
     networks:
       backend:
         aliases:
@@ -339,11 +331,10 @@ services:
       - "8080:8080"
     depends_on:
       - mysql
-      - configserver
+      - redis
     networks:
-      backend:
-        aliases:
-          - "chat-service"
+      - kafka_network
+      - backend
 
   chat-api-service:
     image: chat-api-service:latest
@@ -353,10 +344,6 @@ services:
     depends_on:
       - mysql
       - redis
-      - configserver
-      - Kafka00Service
-      - Kafka01Service
-      - Kafka02Service
     networks:
       backend:
         aliases:
