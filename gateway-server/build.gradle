@@ -25,6 +25,7 @@ ext {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator' // 스프링 액추에이터 (상태 관리, 정보 조회)
 	implementation 'org.springframework.cloud:spring-cloud-starter-config' // 컨피그 클라이언트
+	implementation 'org.springframework.cloud:spring-cloud-starter-security'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
