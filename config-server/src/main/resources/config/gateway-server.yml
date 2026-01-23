@@ -4,6 +4,8 @@ server:
 spring:
   cloud:
     gateway:
+      routes:
+
       server:
         webflux:
           discovery:
@@ -20,6 +22,8 @@ management:
     gateway:
       access: unrestricted
 
+jwt:
+  secret: "Y69LhQRsm/zGEMqQTNuyeeXFdrqqfPpIAnXmZttuLsg="
 
 eureka:
   instance:
