@@ -20,3 +20,12 @@ server:
 jwt:
   expiration-time: 86_400_000
   secret: "Y69LhQRsm/zGEMqQTNuyeeXFdrqqfPpIAnXmZttuLsg="
+
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://localhost:8070/eureka # http://eurekaserver:8070/eureka
