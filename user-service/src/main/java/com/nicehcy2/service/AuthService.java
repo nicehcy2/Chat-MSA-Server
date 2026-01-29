@@ -3,6 +3,7 @@ package com.nicehcy2.service;
 import com.nicehcy2.common.util.JwtUtil;
 import com.nicehcy2.dto.CustomUserInfoDto;
 import com.nicehcy2.dto.LoginRequestDto;
+import com.nicehcy2.dto.SignupRequestDto;
 import com.nicehcy2.entity.User;
 import com.nicehcy2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,8 @@ public class AuthService {
             throw new UsernameNotFoundException("이메일이 존재하지 않습니다.");
         }
 
-        if(!encoder.matches(password, user.getPassword())) {
+        if (!encoder.matches(password, user.getPassword())) {
+
             throw new BadCredentialsException("비밀번호가 일치하지 않습니다.");
         }
 
@@ -40,5 +42,27 @@ public class AuthService {
                 .build();
 
         return jwtUtil.createAccessToken(info);
+    }
+
+    public Long signup(SignupRequestDto signupRequestDto) {
+
+        User exist = userRepository.findUserByEmail(signupRequestDto.email());
+        if (exist != null) {
+            throw new RuntimeException("이메일이 이미 존재합니다");
+        }
+
+        String encodePassword = encoder.encode(signupRequestDto.password());
+
+        User user = User.builder()
+                .nickname(signupRequestDto.nickname())
+                .password(encodePassword)
+                .gender(signupRequestDto.gender())
+                .userRole(signupRequestDto.userRole())
+                .email(signupRequestDto.email())
+                .imageUrl(signupRequestDto.imageUrl())
+                .build();
+
+        User saved = userRepository.save(user);
+        return saved.getUserId();
     }
 }
