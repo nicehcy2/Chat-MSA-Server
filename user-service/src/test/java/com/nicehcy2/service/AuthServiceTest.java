@@ -3,7 +3,9 @@ package com.nicehcy2.service;
 import com.nicehcy2.common.util.JwtUtil;
 import com.nicehcy2.dto.CustomUserInfoDto;
 import com.nicehcy2.dto.LoginRequestDto;
+import com.nicehcy2.dto.SignupRequestDto;
 import com.nicehcy2.entity.User;
+import com.nicehcy2.entity.UserRole;
 import com.nicehcy2.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -97,9 +99,72 @@ class AuthServiceTest {
                 .thenReturn(false);
 
         // === when ===
-        BadCredentialsException ex = assertThrows(
+        assertThrows(
                 BadCredentialsException.class,
                 () -> authService.login(loginRequestDto)
         );
+    }
+
+    @Test
+    void 회원가입_성공() {
+
+        // === given ===
+        SignupRequestDto signup = SignupRequestDto
+                .builder()
+                .email("nicehcy222@naver.com")
+                .password("1234")
+                .gender("M")
+                .imageUrl("heo.jpg")
+                .nickname("heo")
+                .userRole(UserRole.USER)
+                .build();
+
+        User savedUser = User.builder()
+                .userId(1L)
+                .email("nicehcy222@naver.com")
+                .password("1234")
+                .gender("M")
+                .imageUrl("heo.jpg")
+                .nickname("heo")
+                .userRole(UserRole.USER)
+                .build();
+
+        when(userRepository.findUserByEmail(signup.email()))
+                .thenReturn(null);
+        when(userRepository.save(any(User.class)))
+                .thenReturn(savedUser);
+        when(encoder.encode(signup.password()))
+                .thenReturn(("*1234"));
+
+        // === when ===
+        Long userId = authService.signup(signup);
+
+        // === then ===
+        assertEquals(savedUser.getUserId(), userId);
+    }
+
+    @Test
+    void 회원가입_실패() {
+
+        // === given ===
+        SignupRequestDto signup = SignupRequestDto
+                .builder()
+                .email("nicehcy222@naver.com")
+                .password("1234")
+                .gender("M")
+                .imageUrl("heo.jpg")
+                .nickname("heo")
+                .userRole(UserRole.USER)
+                .build();
+
+        User user = mock(User.class);
+
+        // === when ===
+        when(userRepository.findUserByEmail(signup.email()))
+                .thenReturn(user);
+
+        // === then ===
+        assertThrows(RuntimeException.class,
+                () -> authService.signup(signup));
     }
 }
