@@ -3,8 +3,8 @@ package com.nicehcy2.gatewayserver.filter;
 import com.nicehcy2.gatewayserver.common.JwtProvider;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -15,14 +15,16 @@ import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
-public class JwtAuthorizationFilter implements GatewayFilter, Ordered {
+public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
 
     private final JwtProvider jwtProvider;
 
     private static final Set<String> WHITELIST = Set.of(
-            "login"
+            "/user-service/login",
+            "/user-service/refresh"
     );
 
+    @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
         String path = exchange.getRequest().getURI().getPath();
@@ -41,6 +43,8 @@ public class JwtAuthorizationFilter implements GatewayFilter, Ordered {
         String userId = String.valueOf(claims.get("userId"));
         String email = String.valueOf(claims.get("email"));
 
+        System.out.println("test: " + userId + " " + email);
+
         // 다운스트림 서비스로 전달할 헤더 추가
         ServerWebExchange mutated = exchange.mutate()
                 .request(r -> r
@@ -55,6 +59,7 @@ public class JwtAuthorizationFilter implements GatewayFilter, Ordered {
     private String extractToken(ServerWebExchange exchange) {
 
         String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
+        System.out.println("authHeader: " + authHeader);
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);
         }
