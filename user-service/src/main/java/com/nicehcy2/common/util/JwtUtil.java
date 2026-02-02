@@ -8,8 +8,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Date;
 
 @Component
@@ -18,6 +22,10 @@ public class JwtUtil {
 
     private final Key key;
     private final long accessTokenExpTime;
+
+    // 무작위 토큰 생성을 위한 상수
+    // Random은 예측이 가능하고 시드가 유추되면 다음 값도 예측 가능하기에 암호학적으로 안전한(예측 불가) SecureRandom 사용
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     public JwtUtil(
         @Value("${jwt.secret}") String secretKey,
@@ -31,7 +39,7 @@ public class JwtUtil {
 
     /**
      * Access Token 생성
-     * @param user
+     * @param user JWT 페이로드에 추가할 사용자 기본 정보
      * @return Access Token String
      */
     public String createAccessToken(CustomUserInfoDto user) {
@@ -40,8 +48,8 @@ public class JwtUtil {
 
     /**
      * JWT 생성
-     * @param user
-     * @param expireTime
+     * @param user JWT 페이로드에 추가할 사용자 기본 정보
+     * @param expireTime Access Token 만료 기간
      * @return JWT String
      */
     private String createToken(CustomUserInfoDto user, long expireTime) {
@@ -63,7 +71,7 @@ public class JwtUtil {
 
     /**
      * Token에서 UserId 추출
-     * @param token
+     * @param token AccessToken
      * @return User ID
      */
     public Long getUserId(String token) {
@@ -73,7 +81,7 @@ public class JwtUtil {
 
     /**
      * JWT 검증
-     * @param token
+     * @param token Access Token
      * @return isValidate
      */
     public boolean validateToken(String token) {
@@ -95,7 +103,7 @@ public class JwtUtil {
 
     /**
      * JWT Claims 추출
-     * @param accessToken
+     * @param accessToken accessToken
      * @return JWT Claims
      */
     public Claims parseClaims(String accessToken) {
@@ -107,6 +115,35 @@ public class JwtUtil {
                     .getBody();
         } catch (ExpiredJwtException e) {
             return e.getClaims();
+        }
+    }
+
+    public String generateFamilyId() {
+
+        byte[] bytes = new byte[16];
+        RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    public String generateRefreshToken() {
+        byte[] bytes = new byte[64];
+        RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    /**
+     * Redis에 RefreshToken 원문이 아니라, SHA-256 해시값만 저장하기 위해 해시 변환 메서드
+     * @param rawToken Refresh Token 평문
+     * @return Refresh Token을 해시로 변환
+     */
+    public String generateSHA256Token(String rawToken) {
+
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] dig = md.digest(rawToken.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(dig);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

@@ -3,6 +3,7 @@ package com.nicehcy2.service;
 import com.nicehcy2.common.util.JwtUtil;
 import com.nicehcy2.dto.CustomUserInfoDto;
 import com.nicehcy2.dto.LoginRequestDto;
+import com.nicehcy2.dto.LoginResponseDto;
 import com.nicehcy2.dto.SignupRequestDto;
 import com.nicehcy2.entity.User;
 import com.nicehcy2.entity.UserRole;
@@ -74,10 +75,10 @@ class AuthServiceTest {
                 .thenReturn("TOKEN");
 
         // === when ===
-        String jwtToken = authService.login(loginRequestDto);
+        LoginResponseDto jwtToken = authService.login(loginRequestDto);
 
         // === then ===
-        assertEquals("TOKEN", jwtToken);
+        assertEquals("TOKEN", jwtToken.accessToken());
     }
 
     @Test
