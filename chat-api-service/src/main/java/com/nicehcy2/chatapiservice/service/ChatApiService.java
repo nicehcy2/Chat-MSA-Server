@@ -23,6 +23,15 @@ public class ChatApiService {
         return getServerInstance();
     }
 
+    /**
+     * 채팅방 정보 조회
+     * @return
+     */
+    /*
+    public ChatRoomInfoResponseDto getChatRoomDetail(Long chatRoomId) {
+
+    }*/
+
     private ChatServerInfoResponse getServerInstance() {
 
         List<ServiceInstance> instances = discoveryClient.getInstances("chat-service");

@@ -1,7 +1,43 @@
+#spring:
+#  config:
+#    import: "optional:configserver:http://localhost:7071"
+#  application:
+#    name: chat-api-service
+#  profiles:
+#    active: local
+
 spring:
-  config:
-    import: "optional:configserver:http://configserver:7071"
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3307/chatdb
+    username: guest
+    password: guest
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    show-sql: true
+    hibernate:
+      ddl-auto: none
+
   application:
-    name: chat-service
-  profiles:
-    active: default
+    name: chat-api-service
+
+server:
+  port: 8180
+
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://localhost:8070/eureka/
+
+jwt:
+  auth:
+    converter:
+      resource-id: ostock
+      principal-attribute: preferred_username

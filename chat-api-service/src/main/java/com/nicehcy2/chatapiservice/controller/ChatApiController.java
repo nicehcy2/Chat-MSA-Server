@@ -32,4 +32,24 @@ public class ChatApiController {
 
         return ResponseEntity.ok(chatApiService.getChatMessages(chatRoomId));
     }
+
+    /**
+     * 채팅방 만들기
+     * @return
+     */
+    /*
+    @PostMapping
+    public ResponseEntity<> createChatRoom() {
+
+    }*/
+
+    /**
+     * 특정 채팅방 조회
+     */
+    /*
+    @GetMapping("/{chatRoomId}/detail")
+    public ResponseEntity<ChatRoomInfoResponseDto> getChatRoomDetail(@PathVariable Long chatRoomId) {
+
+
+    }*/
 }
