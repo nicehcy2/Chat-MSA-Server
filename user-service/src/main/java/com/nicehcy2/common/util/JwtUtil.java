@@ -57,6 +57,7 @@ public class JwtUtil {
         claims.put("userId", user.userId());
         claims.put("email", user.email());
         claims.put("role", user.role());
+        claims.put("sessionId", user.sessionId());
 
         Instant now = Instant.now();
         Instant tokenValidity = now.plusSeconds(expireTime);
@@ -76,7 +77,7 @@ public class JwtUtil {
      */
     public Long getUserId(String token) {
 
-        return parseClaims(token).get("memberId", Long.class);
+        return parseClaims(token).get("userId", Long.class);
     }
 
     /**

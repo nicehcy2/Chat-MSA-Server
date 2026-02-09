@@ -7,5 +7,6 @@ import lombok.Builder;
 public record CustomUserInfoDto(
         Long userId,
         String email,
-        UserRole role) {
+        UserRole role,
+        String sessionId) {
 }

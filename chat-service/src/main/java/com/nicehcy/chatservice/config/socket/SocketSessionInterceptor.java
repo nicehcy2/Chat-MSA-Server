@@ -26,6 +26,7 @@ public class SocketSessionInterceptor implements ChannelInterceptor {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         accessor.setUser(auth);
 
+        // TODO: Authorization 가져오기
         if (accessor.getCommand() == null || accessor.getNativeHeader("x-user-id") == null) {
             return message;
         }
@@ -39,6 +40,7 @@ public class SocketSessionInterceptor implements ChannelInterceptor {
             socketConnectionTracker.setUserOnline(userId);
             log.info("User {} is now ONLINE.", userId);
 
+            // TODO: 인증 추가
             /*
             if (accessor.getUser() != null) {
                 // REST API와 동일하게 FindLoginUser를 통해 사용자 ID를 확인합니다.

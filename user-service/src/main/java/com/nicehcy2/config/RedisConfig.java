@@ -1,12 +1,13 @@
 package com.nicehcy2.config;
 
+import com.nicehcy2.dto.RedisSessionDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializer;
 
 @Configuration
@@ -45,16 +46,13 @@ public class RedisConfig {
      * @return RedisTemplate<String, Object> - Redis 데이터 작업용 템플릿 객체
      */
     @Bean
-    public RedisTemplate<String, Object> redisTemplate() {
+    public RedisTemplate<String, RedisSessionDto> refreshSessionRedisTemplate() {
 
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        RedisTemplate<String, RedisSessionDto> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory());
 
         template.setKeySerializer(RedisSerializer.string()); // Key 직렬화 방식 설정 (문자열 기반)
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer()); // Value 직렬화 방식 설정 (JSON 직렬화)
-
-        template.setHashKeySerializer(RedisSerializer.string()); // Hash Key 직렬화 방식 설정 (문자열 기반)
-        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer()); // Hash Value 직렬화 방식 설정 (JSON 직렬화)
+        template.setValueSerializer(new Jackson2JsonRedisSerializer<>(RedisSessionDto.class)); // Value 직렬화 방식 설정 (JSON 직렬화)
 
         return template;
     }

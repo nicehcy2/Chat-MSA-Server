@@ -1,8 +1,8 @@
 package com.nicehcy2.controller;
 
+import com.nicehcy2.common.util.CookieUtil;
 import com.nicehcy2.dto.*;
 import com.nicehcy2.service.AuthService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,19 +16,17 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("login")
-    public ResponseEntity<AccessTokenResponseDto> createAuthToken(@Valid @RequestBody LoginRequestDto requestDto, HttpServletResponse response) {
+    public ResponseEntity<AccessTokenResponseDto> createAuthToken(
+            @Valid @RequestBody LoginRequestDto requestDto,
+            HttpServletResponse response) {
 
         LoginResponseDto loginResponse = authService.login(requestDto);
 
-        // TODO: 쿠키 세팅 필요(HttpOnly, setPath, setMaxAge, setAttribute)
-        response.addCookie(
-                new Cookie("refreshToken",
-                        loginResponse.refreshToken())
-        );
-        response.addCookie(
-                new Cookie("sessionId",
-                        loginResponse.sessionId())
-        );
+        // Cookie 추가
+        CookieUtil.addAuthCookies(
+                response,
+                loginResponse.refreshToken(),
+                loginResponse.sessionId());
 
         AccessTokenResponseDto accessTokenResponseDto = AccessTokenResponseDto.builder()
                 .accessToken(loginResponse.accessToken())
@@ -45,16 +43,10 @@ public class AuthController {
             HttpServletResponse response
     ) {
 
-        // TODO: Cookie Set 추가
         LoginResponseDto responseDto = authService.refresh(refreshToken, sessionId);
-        response.addCookie(
-                new Cookie("refreshToken",
-                        responseDto.refreshToken())
-        );
-        response.addCookie(
-                new Cookie("sessionId",
-                        responseDto.sessionId())
-        );
+        CookieUtil.addAuthCookies(response,
+                responseDto.refreshToken(),
+                responseDto.sessionId());
 
         return ResponseEntity.ok(new RefreshResponseDto(responseDto.accessToken()));
     }

@@ -1,5 +1,6 @@
 package com.nicehcy2.service;
 
+import com.nicehcy2.common.util.CookieUtil;
 import com.nicehcy2.common.util.JwtUtil;
 import com.nicehcy2.dto.*;
 import com.nicehcy2.entity.User;
@@ -12,7 +13,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -23,11 +23,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder encoder;
     private final JwtUtil jwtUtil;
-    private final RedisTemplate<String, Object> redisTemplate;
-
-    // TODO: 추후에 설정 파일에서 세팅하도록 변경
-    private static final Duration ACCESS_TTL = Duration.ofMinutes(15);
-    private static final Duration REFRESH_TTL = Duration.ofDays(14);
+    private final RedisTemplate<String, RedisSessionDto> redisTemplate;
 
     @Transactional
     public LoginResponseDto login(LoginRequestDto requestDto) {
@@ -49,25 +45,23 @@ public class AuthService {
         String refreshToken = jwtUtil.generateRefreshToken();
         String rtHash = jwtUtil.generateSHA256Token(refreshToken); // refresh Token을 해시로 변환
 
-        long rtExp = Instant.now().plus(REFRESH_TTL).getEpochSecond(); // refresh Token 만료 기간
+        long rtExp = Instant.now().plus(CookieUtil.REFRESH_TTL).getEpochSecond(); // refresh Token 만료 기간
 
         CustomUserInfoDto info = CustomUserInfoDto.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
                 .role(user.getUserRole())
+                .sessionId(familyId)
                 .build();
 
-        // TODO: Redis 리팩토링 반드시 필요
         RedisSessionDto redisSessionDto = RedisSessionDto.builder()
                 .customUserInfoDto(info)
                 .rtHash(rtHash)
                 .expiresAtEpoch(rtExp)
                 .build();
 
-        redisTemplate.opsForValue().set("rt:session:" + familyId, redisSessionDto, REFRESH_TTL);
+        redisTemplate.opsForValue().set("rt:session:" + familyId, redisSessionDto, CookieUtil.REFRESH_TTL);
 
-        // TODO: access Token에 family Id 추가
-        // TODO: 왜 디바이스가 다르면 sesionId(=family Id)도 달라질까?
         return LoginResponseDto.builder()
                 .accessToken(jwtUtil.createAccessToken(info))
                 .userId(user.getUserId())
@@ -85,9 +79,9 @@ public class AuthService {
         // TODO: overlap을 사용하면 이 부분 수정이 필요함.
 
         // 2. 세션 조회
-        // TODO: null일 경우 오류 발생. null이면 타입 캐스팅 자체가 불가능.
-        RedisSessionDto sessionDto = (RedisSessionDto) redisTemplate.opsForValue().get("rt:session:" + sessionId);
-        if (sessionDto == null) throw new RuntimeException("sessionDto가 없습니다.");
+        RedisSessionDto sessionDto = Optional.of(
+                redisTemplate.opsForValue().get("rt:session:" + sessionId)
+        ).orElseThrow(() -> new RuntimeException("sessionDto가 없습니다"));
 
         // 3. 해시 비교(현재 유요한 RT인지 확인)
         if (!sessionDto.rtHash().equals(incomingRtHash)) {
@@ -101,23 +95,23 @@ public class AuthService {
 
         String newRefreshToken = jwtUtil.generateRefreshToken();
         String newRtHash = jwtUtil.generateSHA256Token(newRefreshToken);
-        long newRtExp = Instant.now().plus(REFRESH_TTL).getEpochSecond();
+        long newRtExp = Instant.now().plus(CookieUtil.REFRESH_TTL).getEpochSecond();
 
         // AccessToken 생성용 User 정보 초기화
         CustomUserInfoDto customUserInfoDto = CustomUserInfoDto.builder()
                 .userId(sessionDto.customUserInfoDto().userId())
                 .email(sessionDto.customUserInfoDto().email())
                 .role(sessionDto.customUserInfoDto().role())
+                .sessionId(sessionId)
                 .build();
-
         // Redis에 저장할 세션 정보
         RedisSessionDto newRedisSessionDto = RedisSessionDto.builder()
                 .customUserInfoDto(customUserInfoDto)
                 .rtHash(newRtHash)
                 .expiresAtEpoch(newRtExp)
                 .build();
-        // TODO: 어떻게 sessionID는 refresh 전과 동일해도 될까?
-        redisTemplate.opsForValue().set("rt:session:" + sessionId, newRedisSessionDto, REFRESH_TTL);
+
+        redisTemplate.opsForValue().set("rt:session:" + sessionId, newRedisSessionDto, CookieUtil.REFRESH_TTL);
 
         String newAccessToken = jwtUtil.createAccessToken(customUserInfoDto);
         return LoginResponseDto.builder()

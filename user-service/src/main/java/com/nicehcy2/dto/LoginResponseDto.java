@@ -6,8 +6,7 @@ import lombok.Builder;
 public record LoginResponseDto(
         String accessToken,
         String refreshToken,
-        String sessionId,
+        String sessionId, // familyId
         Long userId
-        //TODO: 검토 후 SessionID나 FamilyID 추가
 ) {
 }
