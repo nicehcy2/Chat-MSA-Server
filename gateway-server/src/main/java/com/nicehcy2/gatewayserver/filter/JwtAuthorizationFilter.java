@@ -43,8 +43,6 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
         String userId = String.valueOf(claims.get("userId"));
         String email = String.valueOf(claims.get("email"));
 
-        System.out.println("test: " + userId + " " + email);
-
         // 다운스트림 서비스로 전달할 헤더 추가
         ServerWebExchange mutated = exchange.mutate()
                 .request(r -> r
@@ -59,7 +57,6 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
     private String extractToken(ServerWebExchange exchange) {
 
         String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
-        System.out.println("authHeader: " + authHeader);
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);
         }
