@@ -24,6 +24,12 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
             "/user-service/refresh"
     );
 
+    /**
+     *
+     * @param exchange 현재 HTTP 요청 + 응답 + 부가 정보를 담고 있는 컨테이너
+     * @param chain 다음 필터로 요청을 전달하기 위한 필터 체인
+     * @return Mono<Void> (비동기 처리 결과)
+     */
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
@@ -33,11 +39,14 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
         // Authorization에 해당하는 값을 가져옵니다.
         String token = extractToken(exchange);
 
+        // token이 null이거나 검증이 실패하면 401 응답.
         if (token == null || !jwtProvider.validate(token)) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            return exchange.getResponse().setComplete(); // 더 이상 필터 체인을 진행하지 말고 응답을 여기서 끝냄.
         }
 
+        // Claims(JWT Payload)를 가져온다.
+        // 사용자의 정보를 가져온다.
         Claims claims = jwtProvider.parseClaims(token);
 
         String userId = String.valueOf(claims.get("userId"));
@@ -56,19 +65,19 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
 
     private String extractToken(ServerWebExchange exchange) {
 
-        String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
+        String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization"); // 요청 헤더의 Authorization를 가져온다.
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
+            return authHeader.substring(7); // 접두사 생략
         }
         return null;
     }
 
     private boolean isWhitelisted(String path) {
 
-        if (WHITELIST.contains(path)) return true;
-        else return false;
+        return WHITELIST.contains(path);
     }
 
+    // 필터 실행 순서를 제어
     @Override
     public int getOrder() {
         return -1; // 라우팅 전에 최대한 먼저
