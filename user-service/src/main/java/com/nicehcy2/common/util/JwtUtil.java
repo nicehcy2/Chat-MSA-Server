@@ -20,8 +20,8 @@ import java.util.Date;
 @Slf4j
 public class JwtUtil {
 
-    private final Key key;
-    private final long accessTokenExpTime;
+    private final Key key; // secretKey를 HMAC 알고리즘에 맞게 저장. 해시 서명용 비밀키
+    private final long accessTokenExpTime; // 토큰 만료 시간
 
     // 무작위 토큰 생성을 위한 상수
     // Random은 예측이 가능하고 시드가 유추되면 다음 값도 예측 가능하기에 암호학적으로 안전한(예측 불가) SecureRandom 사용
@@ -32,7 +32,11 @@ public class JwtUtil {
         @Value("${jwt.expiration-time}") long accessTokenExpTime
     ){
 
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey); // BASE64로 인코딩된 문자열을 바이트로 되돌림
+
+        // JJWT에서 쓰는 코드인데, byte를 기반으로 HMAC 알고리즘에 맞는 Key 객체 생성
+        // HMAC은 비밀키를 이용해서 데이터가 위조되지 않았음을 증명하는 해시 방식. 암호화가 아니다.
+        // 비밀키 + 메시지를 섞고 SHA-256 해시 계산을 하고 또 한 번 감싸서 해시 계산 -> 무결성 + 인증을 보장.
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.accessTokenExpTime = accessTokenExpTime;
     }
@@ -53,6 +57,10 @@ public class JwtUtil {
      * @return JWT String
      */
     private String createToken(CustomUserInfoDto user, long expireTime) {
+
+        // 1. JWT payload를 만드는 코드
+        // Claims는 JWT의 payload 영역을 의미. JWT 안에 사용자 정보를 넣는다.
+        // 서버가 매번 DB를 조회하지 않고 사용자 정보 및 필요한 정보를 조회 가능
         Claims claims = Jwts.claims();
         claims.put("userId", user.userId());
         claims.put("email", user.email());
@@ -110,7 +118,7 @@ public class JwtUtil {
     public Claims parseClaims(String accessToken) {
         try {
             return Jwts.parserBuilder()
-                    .setSigningKey(key) // 서명 검증용 비밀키  생성
+                    .setSigningKey(key) // 서명 검증용 비밀키 생성
                     .build()
                     .parseClaimsJws(accessToken) // JWT 파싱 + 서명 검증
                     .getBody();
@@ -123,10 +131,11 @@ public class JwtUtil {
 
         byte[] bytes = new byte[16];
         RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes); // 바이트 배열을 JWT 규격에 맞는 URL-safe Base64 문자열로 변환하는 코드
     }
 
     public String generateRefreshToken() {
+
         byte[] bytes = new byte[64];
         RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
@@ -140,9 +149,11 @@ public class JwtUtil {
     public String generateSHA256Token(String rawToken) {
 
         try {
+            // SHA-256 해시 알고리즘 객체를 생성
+            // 입력 길이와 상관없이 항상 32바이트 결과를 출력
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] dig = md.digest(rawToken.getBytes(StandardCharsets.UTF_8));
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(dig);
+            byte[] dig = md.digest(rawToken.getBytes(StandardCharsets.UTF_8)); // 문자열을 바이트 배열로 변환, 해시 함수는 바이트를 입력으로 받음.
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(dig); // 바이트 배열을 JWT 규격에 맞는 URL-safe Base64 문자열로 변환하는 코드
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

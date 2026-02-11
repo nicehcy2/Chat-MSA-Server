@@ -33,7 +33,6 @@ public class User {
     @Column(name = "profile_url")
     private String imageUrl;
 
-    // TODO: ROLE 만들자
     @Enumerated(EnumType.STRING)
     @Column(name = "ROLE", nullable = false)
     private UserRole userRole;
