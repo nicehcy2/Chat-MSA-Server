@@ -12,7 +12,7 @@ spring:
         format_sql: true
         show-sql: true
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
 
   data:
     redis:
@@ -23,7 +23,7 @@ server:
   port: 8030
 
 jwt:
-  expiration-time: 86_400_000
+  expiration-time: 60
   secret: "Y69LhQRsm/zGEMqQTNuyeeXFdrqqfPpIAnXmZttuLsg="
 
 eureka:
