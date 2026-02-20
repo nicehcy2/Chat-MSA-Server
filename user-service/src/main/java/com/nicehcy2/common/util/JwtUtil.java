@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
@@ -22,6 +23,7 @@ public class JwtUtil {
 
     private final Key key; // secretKey를 HMAC 알고리즘에 맞게 저장. 해시 서명용 비밀키
     private final long accessTokenExpTime; // 토큰 만료 시간
+    public static final Duration OVERLAP_WINDOW = Duration.ofSeconds(30); // 오버랩 허용 시간
 
     // 무작위 토큰 생성을 위한 상수
     // Random은 예측이 가능하고 시드가 유추되면 다음 값도 예측 가능하기에 암호학적으로 안전한(예측 불가) SecureRandom 사용

@@ -62,6 +62,8 @@ public class AuthService {
         RedisSessionDto redisSessionDto = RedisSessionDto.builder()
                 .customUserInfoDto(info)
                 .rtHash(rtHash)
+                .prevRtHash(null)       // 최초 로그인 시 이전 토큰 없음
+                .rotatedAtEpoch(null)
                 .expiresAtEpoch(rtExp)
                 .build();
 
@@ -84,29 +86,42 @@ public class AuthService {
         // 클라이언트가 쿠키로 보낸 refreshToken을 hash로 변환.
         String incomingRtHash = jwtUtil.generateSHA256Token(refreshToken);
 
-        // 1. 재사용 탐지: 새로운 토큰이 생성 되었는데, 이전 토큰이 사용됨
-        // 네트워크 문제나 동시 refresh를 할 경우, 정상적인 접근에도 인증에 실패할 수 있다.
-        // 조금의 오차를 허용해줘서 사용자 경험을 개선한다.
-        // TODO: overlap을 사용하면 이 부분 수정이 필요함.
-
-        // 2. 세션 조회 (Redis에 동일한 키가 있는지 확인)
+        // 1. 세션 조회 (Redis에 동일한 키가 있는지 확인)
         RedisSessionDto sessionDto = Optional.of(
                 redisTemplate.opsForValue().get("rt:session:" + sessionId)
-        ).orElseThrow(() -> new RuntimeException("sessionDto가 없습니다"));
+        ).orElseThrow(() -> new RuntimeException("세션이 존재하지 않습니다."));
 
-        // 3. 해시 비교(현재 유효한 RT인지 확인)
+        // 2. 현재 RT 검증 (현재 유효한 해시인지 비교)
         // Refresh 되면 rtHash 값이 바뀐다. 즉, 이전 RefreshToken을 사용할 경우, 인증에 실패한다.
-        if (!sessionDto.rtHash().equals(incomingRtHash)) {
-            throw new RuntimeException("invalid refresh token");
+        boolean isCurrentRt = sessionDto.rtHash().equals(incomingRtHash);
+
+        // 3. 이전 RT 검증 (overlap 허용)
+        // 재사용 탐지: 새로운 토큰이 생성 되었는데, 이전 토큰이 사용됨
+        // 네트워크 문제나 동시 refresh를 할 경우, 정상적인 접근에도 인증에 실패할 수 있다.
+        // 조금의 오차를 허용해줘서 사용자 경험을 개선한다.
+        boolean isPrevRt = false;
+        if (!isCurrentRt && sessionDto.prevRtHash() != null && sessionDto.rotatedAtEpoch() != null) {
+
+            long now = Instant.now().getEpochSecond();
+            long secondsSinceRotation = now - sessionDto.rotatedAtEpoch();
+
+            isPrevRt = sessionDto.prevRtHash().equals(incomingRtHash)
+                    && secondsSinceRotation <= JwtUtil.OVERLAP_WINDOW.toSeconds();
         }
 
-        // 4. 회전(새로운 RT 발급)
-        // 기존 RT를 used로 마킹(재사용 탐지용) TODO: used로 마킹하는 로직 추가
-        // 새 RT 발급 후 session의 rtHash 교체
+        // 4. 둘 다 아니면 -> 재사용 공격 또는 만료
+        if (!isCurrentRt && !isPrevRt) {
 
+            // 재사용 탐지 -> 세션 전체 삭제
+            redisTemplate.delete("rt:session:" + sessionId);
+            throw new RuntimeException("Invalid or reused refresh token. Session revoked.");
+        }
+
+        // 5. 회전(새로운 RT 발급)
         String newRefreshToken = jwtUtil.generateRefreshToken(); // 새로운 refreshToken 발급
         String newRtHash = jwtUtil.generateSHA256Token(newRefreshToken); // 새로운 rtHash 발급
         long newRtExp = Instant.now().plus(CookieUtil.REFRESH_TTL).getEpochSecond();
+        long now = Instant.now().getEpochSecond();
 
         // AccessToken 생성용 User 정보 초기화
         CustomUserInfoDto customUserInfoDto = CustomUserInfoDto.builder()
@@ -115,10 +130,14 @@ public class AuthService {
                 .role(sessionDto.customUserInfoDto().role())
                 .sessionId(sessionId)
                 .build();
+
         // Redis에 저장할 세션, RefreshToken 정보
         RedisSessionDto newRedisSessionDto = RedisSessionDto.builder()
                 .customUserInfoDto(customUserInfoDto)
                 .rtHash(newRtHash)
+                // 이전 RT 기록: overlap 요청이었으면 prevRtHash 유지, 정상 rotate면 현재 걸 prev로
+                .prevRtHash(isCurrentRt ? sessionDto.rtHash() : sessionDto.prevRtHash())
+                .rotatedAtEpoch(isCurrentRt ? now : sessionDto.rotatedAtEpoch()) // prevRt면 갱신 안 함
                 .expiresAtEpoch(newRtExp)
                 .build();
 
