@@ -1,15 +1,18 @@
 package com.nicehcy2.gatewayserver.common;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 
+@Slf4j
 @Component
 public class JwtProvider {
 
@@ -38,7 +41,14 @@ public class JwtProvider {
         try {
             parseClaims(token); // 파싱 + 검증
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
+        } catch (ExpiredJwtException e) {
+
+            log.info("JWT Token 만료!");
+            return false;
+        }
+        catch (JwtException | IllegalArgumentException e) {
+
+            log.info("JWT 토큰 검증 실패(만료가 원인은 아님)");
             return false;
         }
     }
