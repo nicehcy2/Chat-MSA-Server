@@ -5,9 +5,9 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.time.Duration;
 
-public class CookieUtil {
+import static com.nicehcy2.common.util.JwtUtil.REFRESH_TTL;
 
-    public static final Duration REFRESH_TTL = Duration.ofDays(14);
+public class CookieUtil {
 
     public static void addAuthCookies(HttpServletResponse response,
                                       String refreshToken,

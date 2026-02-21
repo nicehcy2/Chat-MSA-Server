@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Optional;
 
+import static com.nicehcy2.common.util.JwtUtil.REFRESH_TTL;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -48,7 +50,7 @@ public class AuthService {
         String familyId = jwtUtil.generateFamilyId(); // SessionID 생성
         String refreshToken = jwtUtil.generateRefreshToken(); // Refresh Token 생성
         String rtHash = jwtUtil.generateSHA256Token(refreshToken); // refresh Token을 해시로 변환
-        long rtExp = Instant.now().plus(CookieUtil.REFRESH_TTL).getEpochSecond(); // refresh Token 만료 기간
+        long rtExp = Instant.now().plus(REFRESH_TTL).getEpochSecond(); // refresh Token 만료 기간
 
         // 2. Redis에 저장할 User 정보 객체 생성
         CustomUserInfoDto info = CustomUserInfoDto.builder()
@@ -69,7 +71,7 @@ public class AuthService {
 
         // 4. Redis에 저장.
         // Redis에 User 정보와 sessionId, refreshToken, 만료기간을 기록한다.
-        redisTemplate.opsForValue().set("rt:session:" + familyId, redisSessionDto, CookieUtil.REFRESH_TTL);
+        redisTemplate.opsForValue().set("rt:session:" + familyId, redisSessionDto, REFRESH_TTL);
 
         // RefreshToken과 SessionID, 유저 정보를 기반으로 AccessToken을 만들고 반환.
         return LoginResponseDto.builder()
@@ -87,7 +89,7 @@ public class AuthService {
         String incomingRtHash = jwtUtil.generateSHA256Token(refreshToken);
 
         // 1. 세션 조회 (Redis에 동일한 키가 있는지 확인)
-        RedisSessionDto sessionDto = Optional.of(
+        RedisSessionDto sessionDto = Optional.ofNullable(
                 redisTemplate.opsForValue().get("rt:session:" + sessionId)
         ).orElseThrow(() -> new RuntimeException("세션이 존재하지 않습니다."));
 
@@ -120,7 +122,7 @@ public class AuthService {
         // 5. 회전(새로운 RT 발급)
         String newRefreshToken = jwtUtil.generateRefreshToken(); // 새로운 refreshToken 발급
         String newRtHash = jwtUtil.generateSHA256Token(newRefreshToken); // 새로운 rtHash 발급
-        long newRtExp = Instant.now().plus(CookieUtil.REFRESH_TTL).getEpochSecond();
+        long newRtExp = Instant.now().plus(REFRESH_TTL).getEpochSecond();
         long now = Instant.now().getEpochSecond();
 
         // AccessToken 생성용 User 정보 초기화
@@ -142,7 +144,7 @@ public class AuthService {
                 .build();
 
         // Redis에 새로운 세션 + refresh Token 저장
-        redisTemplate.opsForValue().set("rt:session:" + sessionId, newRedisSessionDto, CookieUtil.REFRESH_TTL);
+        redisTemplate.opsForValue().set("rt:session:" + sessionId, newRedisSessionDto, REFRESH_TTL);
 
         String newAccessToken = jwtUtil.createAccessToken(customUserInfoDto); // 새로운 AccessToken 발급
         return LoginResponseDto.builder()

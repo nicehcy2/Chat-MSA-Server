@@ -53,7 +53,11 @@ public class AuthController {
                 responseDto.refreshToken(),
                 responseDto.sessionId());
 
-        return ResponseEntity.ok(new RefreshResponseDto(responseDto.accessToken()));
+        return ResponseEntity.ok(RefreshResponseDto.builder()
+                        .accessToken(responseDto.accessToken())
+                        .sessionId(responseDto.sessionId())
+                        .userId(responseDto.userId())
+                .build());
     }
 
     @PostMapping("signup")

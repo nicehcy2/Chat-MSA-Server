@@ -1,7 +1,11 @@
 package com.nicehcy2.dto;
 
+import lombok.Builder;
+
+@Builder
 public record RefreshResponseDto(
-        String accessToken
-        //TODO: 검토 후 SessionID나 FamilyID 추가
+        String accessToken,
+        String sessionId,
+        Long userId
 ) {
 }
