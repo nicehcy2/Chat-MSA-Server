@@ -12,8 +12,8 @@ spring:
 
   data:
     redis:
-      host: redis # redis_container
-      port: 6379
+      host: localhost # redis_container
+      port: 6380
 
   jpa:
     properties:
@@ -26,7 +26,7 @@ spring:
 
   # Kafka ?? ??
   kafka:
-    bootstrap-servers: Kafka00Service:9092,Kafka01Service:9092,Kafka02Service:9092
+    bootstrap-servers: localhost:10000,localhost:10001,localhost:10002
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
