@@ -59,5 +59,8 @@ management:
     tracing:
       endpoint: http://zipkin:9411/api/v2/spans
 
+jwt:
+  secret: "Y69LhQRsm/zGEMqQTNuyeeXFdrqqfPpIAnXmZttuLsg="
+
 server:
   port: 8080
