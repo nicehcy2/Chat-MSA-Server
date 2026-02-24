@@ -24,11 +24,13 @@ public class ChatKafkaConsumer {
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
     private final RedisTemplate<String, String> redisTemplate;
     @Value("${ONLINE_KEY_PREFIX}") private String ONLINE_KEY_PREFIX;
+    @Value("${CHAT_NODE_ID}") private String chatNodeId;
 
     // 다중 채팅 서버 적용 시 각 채팅 서버마다 groupId를 다르게 설정해야 한다.
     @KafkaListener(topics = "chat-topic", groupId = "${CHAT_NODE_ID}")
     public void listenKafkaChatMessage(@Payload final MessageDto messageDto) {
 
+        log.info("NODE: {} | 메시지 수신: {}", chatNodeId, messageDto);
         log.info("[5/6] Kafka 리스너 수신 메시지 전체 내용: {}", messageDto);
 
         // 해당 채팅방에 모든 멤버 조회
