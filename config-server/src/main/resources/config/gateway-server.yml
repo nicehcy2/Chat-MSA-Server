@@ -35,6 +35,14 @@ management:
   endpoint:
     gateway:
       access: unrestricted
+  tracing:
+    sampling:
+      probability: 1.0
+    propagation:
+      type: W3C
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans
 
 jwt:
   secret: "Y69LhQRsm/zGEMqQTNuyeeXFdrqqfPpIAnXmZttuLsg="
