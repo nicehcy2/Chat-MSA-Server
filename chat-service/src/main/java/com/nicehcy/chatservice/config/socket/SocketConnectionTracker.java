@@ -15,7 +15,8 @@ public class SocketConnectionTracker {
     private String ONLINE_KEY_PREFIX;
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final long TTL_MINUTES = 10; // TTL 시간 - 소켓 비정상연결 종료 관리위함
+    // TODO: 추후에 사용자의 동작을 감지해서 RefreshToken 요청을 정확하게 해줄 수 있다면 사용자 온라인 TTL을 accessToken가 일치시키자.
+    private final long TTL_MINUTES = 30; // 사용자 온라인 TTL 시간 - 소켓 비정상연결 종료 관리위함
 
     /**
      * 사용자 ID를 기반으로 온라인 상태를 Redis에 기록합니다.
