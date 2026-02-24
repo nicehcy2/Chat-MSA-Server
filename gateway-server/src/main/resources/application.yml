@@ -1,17 +1,7 @@
 spring:
   config:
-    import: "optional:configserver:http://localhost:7071"
+    import: "optional:configserver:http://configserver:7071"
   application:
     name: gateway-server
   profiles:
-    active: local
-
-management:
-  tracing:
-    sampling:
-      probability: 1.0
-    propagation:
-      type: W3C
-  zipkin:
-    tracing:
-      endpoint: http://localhost:9411/api/v2/spans
+    active: default
