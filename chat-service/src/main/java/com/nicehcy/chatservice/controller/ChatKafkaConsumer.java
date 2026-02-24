@@ -1,6 +1,5 @@
 package com.nicehcy.chatservice.controller;
 
-import com.nicehcy.chatservice.config.socket.SocketConnectionTracker;
 import com.nicehcy.chatservice.dto.MessageDto;
 import com.nicehcy.chatservice.entity.ChatRoomMembership;
 import com.nicehcy.chatservice.repository.ChatRoomMembershipRepository;
@@ -57,10 +56,6 @@ public class ChatKafkaConsumer {
             }
         }
 
-        final String destination = "/sub/chatroom" + messageDto.chatRoomId();
-        messagingTemplate.convertAndSend(destination, messageDto);
-        log.info("[6/6] STOMP over WebSocket을 통해 메시지 전송");
-        /*
         if (onlines.isEmpty()) {
             log.info("All User is offline. FCM push triggered."); // TODO: FCM 전송 로직 추가
         }
@@ -69,7 +64,5 @@ public class ChatKafkaConsumer {
             messagingTemplate.convertAndSend(destination, messageDto);
             log.info("[6/6] STOMP over WebSocket을 통해 메시지 전송");
         }
-
-         */
     }
 }
