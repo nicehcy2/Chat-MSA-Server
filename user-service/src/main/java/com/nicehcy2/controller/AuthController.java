@@ -65,4 +65,10 @@ public class AuthController {
 
         return ResponseEntity.ok(authService.signup(signupRequestDto));
     }
+
+    @GetMapping("signup/email/check")
+    public ResponseEntity<Boolean> checkEmailDuplicate(@RequestParam String email) {
+
+        return ResponseEntity.ok(authService.checkEmailDuplicate(email));
+    }
 }

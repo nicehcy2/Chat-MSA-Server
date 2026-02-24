@@ -167,6 +167,11 @@ public class AuthService {
         User user = User.builder()
                 .nickname(signupRequestDto.nickname())
                 .password(encodePassword)
+                .ageGroup(signupRequestDto.ageGroup())
+                .reward(signupRequestDto.reward())
+                .birthDay(signupRequestDto.birthDay())
+                .userRole(signupRequestDto.userRole())
+                .jobGroup(signupRequestDto.jobGroup())
                 .gender(signupRequestDto.gender())
                 .userRole(signupRequestDto.userRole())
                 .email(signupRequestDto.email())
@@ -175,5 +180,10 @@ public class AuthService {
 
         User saved = userRepository.save(user);
         return saved.getUserId();
+    }
+
+    public boolean checkEmailDuplicate(String email) {
+
+        return userRepository.existsByEmail(email);
     }
 }
