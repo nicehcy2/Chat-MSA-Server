@@ -185,40 +185,40 @@ services:
     networks:
       - kafka_network
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:24.0.5
-    container_name: keycloak
-    restart: unless-stopped
-    ports:
-      - '7070:8080' # Keycloak 콘솔 http://localhost:8080
-    environment:
-      # 관리자 계정 (운영에서는 Secret/변수로 교체)
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+  # keycloak:
+  #  image: quay.io/keycloak/keycloak:24.0.5
+  #  container_name: keycloak
+  #  restart: unless-stopped
+  #  ports:
+  #    - '7070:8080' # Keycloak 콘솔 http://localhost:8080
+  #  environment:
+  #    # 관리자 계정 (운영에서는 Secret/변수로 교체)
+  #    KEYCLOAK_ADMIN: admin
+  #    KEYCLOAK_ADMIN_PASSWORD: admin
 
-      # DB 설정: MySQL
-      KC_DB: mysql
-      KC_DB_USERNAME: guest
-      KC_DB_PASSWORD: guest
-      KC_DB_URL_HOST: mysql
-      KC_DB_URL_PORT: 3306
-      KC_DB_URL_DATABASE: keycloak    # 아래 init SQL로 미리 생성
-      KC_HOSTNAME_URL: http://localhost:7070
-      KC_HOSTNAME_ADMIN_URL: http://localhost:7070
-      # 호스트네임 (게이트웨이 앞단에서 쓰면 도메인으로 세팅 권장)
-      # KC_HOSTNAME: localhost
-      # 데모 환경은 HTTP 허용(운영은 반드시 프록시 뒤 HTTPS)
-      KC_HTTP_ENABLED: 'true'
-      # 리버스 프록시(게이트웨이) 뒤라면 'edge' 권장
-      # KC_PROXY: edge
-    command:
-      - start
-      # realm 자동 import 하고 싶다면 예시:
-      # - --import-realm
-    depends_on:
-      - mysql
-    networks:
-      - kafka_network
+  #    # DB 설정: MySQL
+  #    KC_DB: mysql
+  #    KC_DB_USERNAME: guest
+  #    KC_DB_PASSWORD: guest
+  #    KC_DB_URL_HOST: mysql
+  #    KC_DB_URL_PORT: 3306
+  #    KC_DB_URL_DATABASE: keycloak    # 아래 init SQL로 미리 생성
+  #    KC_HOSTNAME_URL: http://localhost:7070
+  #    KC_HOSTNAME_ADMIN_URL: http://localhost:7070
+  #    # 호스트네임 (게이트웨이 앞단에서 쓰면 도메인으로 세팅 권장)
+  #    # KC_HOSTNAME: localhost
+  #    # 데모 환경은 HTTP 허용(운영은 반드시 프록시 뒤 HTTPS)
+  #    KC_HTTP_ENABLED: 'true'
+  #    # 리버스 프록시(게이트웨이) 뒤라면 'edge' 권장
+  #    # KC_PROXY: edge
+  #  command:
+  #    - start
+  #    # realm 자동 import 하고 싶다면 예시:
+  #    # - --import-realm
+  #  depends_on:
+  #    - mysql
+  #  networks:
+  #    - kafka_network
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.14.2
