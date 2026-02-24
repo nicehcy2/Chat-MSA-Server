@@ -22,7 +22,8 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
     private static final Set<String> WHITELIST = Set.of(
             "/user-service/login",
             "/user-service/refresh",
-            "/user-service/signup"
+            "/user-service/signup",
+            "/user-service/signup/email/check"
     );
 
     /**
