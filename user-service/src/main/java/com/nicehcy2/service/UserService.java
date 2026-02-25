@@ -39,9 +39,6 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자가 없습니다."));
 
-        System.out.println(userInfoRequestDto.ageGroup());
-        System.out.println(userId);
-        System.out.println(userInfoRequestDto.nickname());
         user.patch(
                 userInfoRequestDto.nickname(),
                 userInfoRequestDto.gender(),
