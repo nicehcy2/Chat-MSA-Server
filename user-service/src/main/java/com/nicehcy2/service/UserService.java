@@ -42,8 +42,8 @@ public class UserService {
         user.patch(
                 userInfoRequestDto.nickname(),
                 userInfoRequestDto.gender(),
-                AgeGroup.valueOf(userInfoRequestDto.ageGroup()),
-                JobGroup.valueOf(userInfoRequestDto.jobGroup()),
+                userInfoRequestDto.ageGroup() != null ? AgeGroup.valueOf(userInfoRequestDto.ageGroup()) : null,
+                userInfoRequestDto.jobGroup() != null ? JobGroup.valueOf(userInfoRequestDto.jobGroup()) : null,
                 userInfoRequestDto.imageUrl()
         );
     }
