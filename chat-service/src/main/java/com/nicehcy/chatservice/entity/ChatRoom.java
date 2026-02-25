@@ -4,6 +4,7 @@ import com.nicehcy.chatservice.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -22,6 +23,12 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "title", nullable = false, length = 18)
     private String title;
 
+    @Column(name = "password", length = 4)
+    private String password;
+
+    @Column(name = "description", length = 200)
+    private String description;
+
     // 최대 참여인원 - 최대 100명
     @Column(name = "max_participants", nullable = false)
     // @Max(100)
@@ -37,5 +44,5 @@ public class ChatRoom extends BaseEntity {
     private String imageUrl;
 
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL)
-    private List<ChatRoomMembership> chatRoomMembershipList;
+    private List<ChatRoomMembership> chatRoomMembershipList = new ArrayList<>();
 }
