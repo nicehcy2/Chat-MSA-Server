@@ -61,4 +61,12 @@ public class User {
 
     @Column(name = "profile_url")
     private String imageUrl;
+
+    public void patch(String nickname, String gender, AgeGroup ageGroup, JobGroup jobGroup, String imageUrl) {
+        if (nickname != null) this.nickname = nickname;
+        if (gender != null) this.gender = gender;
+        if (ageGroup != null) this.ageGroup = ageGroup;
+        if (jobGroup != null) this.jobGroup = jobGroup;
+        if (imageUrl != null) this.imageUrl = imageUrl;
+    }
 }
