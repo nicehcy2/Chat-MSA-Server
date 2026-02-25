@@ -1,14 +1,45 @@
 package com.nicehcy2.chatapiservice.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.nicehcy2.chatapiservice.common.BaseEntity;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-public class ChatRoom {
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+public class ChatRoom extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    // 채팅방 제목
+    @Column(name = "title", nullable = false, length = 18)
+    private String title;
+
+    @Column(name = "password", length = 4)
+    private String password;
+
+    @Column(name = "description", length = 200)
+    private String description;
+
+    // 최대 참여인원 - 최대 100명
+    @Column(name = "max_participants", nullable = false)
+    // @Max(100)
+    private Integer maxParticipants;
+
+    // 참여 인원 수 - 최대 maxParticipants명
+    @Column(name = "participation_count", nullable = false)
+    // @Min(0) // 음수가 될 수 없도록
+    private Integer participationCount;
+
+    // 프로필 이미지
+    @Column(name = "image_url")
+    private String imageUrl;
 }

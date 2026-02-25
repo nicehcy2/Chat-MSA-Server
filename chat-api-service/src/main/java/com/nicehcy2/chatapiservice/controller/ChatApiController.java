@@ -1,5 +1,6 @@
 package com.nicehcy2.chatapiservice.controller;
 
+import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
 import com.nicehcy2.chatapiservice.dto.MessageDto;
 import com.nicehcy2.chatapiservice.dto.ChatServerInfoResponse;
 import com.nicehcy2.chatapiservice.service.ChatApiService;
@@ -31,6 +32,12 @@ public class ChatApiController {
     public ResponseEntity<List<MessageDto>> getChatMessages(@PathVariable Long chatRoomId) {
 
         return ResponseEntity.ok(chatApiService.getChatMessages(chatRoomId));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ChatRoomInfoResponseDto>> getChatRoomList(@RequestParam Long userId) {
+
+        return ResponseEntity.ok(chatApiService.getChatRoomDetails(userId));
     }
 
     /**

@@ -1,10 +1,19 @@
 package com.nicehcy2.chatapiservice.dto;
 
-public record ChatRoomInfoResponseDto(
-        String chatRoomTitle,
-        Integer chatRoomPassword,
-        Integer chatRoomMaxUserCount,
-        String chatRoomRule
+import lombok.Builder;
 
-) {
-}
+import java.time.LocalDateTime;
+
+@Builder
+public record ChatRoomInfoResponseDto(
+        Long chatRoomId,
+        String chatRoomTitle,
+        Integer chatRoomMaxUserCount,
+        String chatRoomRule,
+        String chatRoomThumbnail,
+        Integer participationCount, // 현재 인원수
+        String lastChatMessage,
+        Integer unreadChatCount,
+        LocalDateTime updatedAt
+        )
+{ }
