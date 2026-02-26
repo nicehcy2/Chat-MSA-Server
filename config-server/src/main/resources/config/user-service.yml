@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: user-service
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://mysql:3306/chatdb
+    username: guest
+    password: guest
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+        show-sql: true
+    hibernate:
+      ddl-auto: update
+
+  data:
+    redis:
+      host: redis # redis
+      port: 6379 # 6379
+
+server:
+  port: 8030
+
+jwt:
+  expiration-time: 60
+  secret: "Y69LhQRsm/zGEMqQTNuyeeXFdrqqfPpIAnXmZttuLsg="
+
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://eurekaserver:8070/eureka # http://eurekaserver:8070/eureka
