@@ -1,6 +1,6 @@
 spring:
   config:
-    import: "optional:configserver:http://configserver:7071"
+    import: "optional:configserver:http://${CONFIG_HOST}:${CONFIG_PORT}"
   application:
     name: gateway-server
   profiles:
