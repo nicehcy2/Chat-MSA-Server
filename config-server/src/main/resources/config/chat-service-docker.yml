@@ -1,4 +1,4 @@
-CHAT_NODE_ID: ${CHAT_NODE_ID} # 컨테이너/vm마다 고유값 주입
+CHAT_NODE_ID: chat-messages-group1 # 컨테이너/vm마다 고유값 주입
 ONLINE_KEY_PREFIX: 'socket:online:1:'
 OUTBOX_KAFKA_TOPIC: 'cdc.chatdb.outbox'
 OUTBOX_GROUP_ID: 'chat-outbox-consumers'
@@ -6,14 +6,14 @@ OUTBOX_GROUP_ID: 'chat-outbox-consumers'
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/chatdb
-    username: ${MYSQL_USERNAME}
-    password: ${MYSQL_PASSWORD}
+    url: jdbc:mysql://mysql:3306/chatdb
+    username: guest
+    password: guest
 
   data:
     redis:
-      host: ${REDIS_HOST} # redis_container
-      port: ${REDIS_PORT}
+      host: redis # redis_container
+      port: 6379
 
   jpa:
     properties:
@@ -26,7 +26,7 @@ spring:
 
   # Kafka ?? ??
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    bootstrap-servers: Kafka00Service:9092,Kafka01Service:9092,Kafka02Service:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -46,7 +46,7 @@ eureka:
     registerWithEureka: true
     fetchRegistry: true
     serviceUrl:
-      defaultZone: http://${EUREKA_HOST}:${EUREKA_PORT:8070}/eureka/
+      defaultZone: http://eurekaserver:8070/eureka/
 
 management:
   tracing:
@@ -57,10 +57,10 @@ management:
       type: W3C
   zipkin:
     tracing:
-      endpoint: http://${ZIPKIN_HOST}:${ZIPKIN_PORT:9411}/api/v2/spans
+      endpoint: http://zipkin:9411/api/v2/spans
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: "Y69LhQRsm/zGEMqQTNuyeeXFdrqqfPpIAnXmZttuLsg="
 
 server:
   port: 8080
