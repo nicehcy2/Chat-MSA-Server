@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://mysql:3306/chatdb
-    username: guest
-    password: guest
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/chatdb
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     properties:
       hibernate:
@@ -15,21 +15,6 @@ spring:
 
   application:
     name: chat-api-service
-  #security:
-    #oauth2:
-      #resourceserver:
-        #jwt:
-          #issuer-uri: http://keycloak:8080/realms/spmia-realm
-      #client:
-        #registration:
-          #keycloak:
-            #authorization-grant-type: client_credentials
-            #client-id: ostock
-            #client-secret: 0VFvtUzzrORmAVqcgykHSzwiaKc5615O
-            #provider: keycloak
-        #provider:
-          #keycloak:
-            #issuer-uri: http://keycloak:8080/realms/spmia-realm
 
 server:
   port: 8180
@@ -41,7 +26,7 @@ eureka:
     registerWithEureka: true
     fetchRegistry: true
     serviceUrl:
-      defaultZone: http://eurekaserver:8070/eureka/
+      defaultZone: http://${EUREKA_HOST}:${EUREKA_PORT}/eureka/
 
 jwt:
   auth:
