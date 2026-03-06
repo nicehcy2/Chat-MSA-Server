@@ -1,7 +1,7 @@
 spring:
   config:
-    import: "optional:configserver:http://${CONFIG_HOST}:${CONFIG_PORT}"
+    import: "optional:configserver:http://${CONFIG_HOST:configserver}:${CONFIG_PORT:7071}"
   application:
     name: gateway-server
   profiles:
-    active: default
+    active: docker
