@@ -46,4 +46,19 @@ public class Outbox extends BaseEntity {
         this.retryCount = 0;
         this.status = OutboxStatus.PENDING;
     }
+
+    public void markPublished() {
+        this.status = OutboxStatus.PUBLISHED;
+        this.publishedAt = LocalDateTime.now();
+    }
+
+    public void markFailed() {
+        this.status = OutboxStatus.FAILED;
+        this.failedAt = LocalDateTime.now();
+        this.retryCount++;
+    }
+
+    public void resetToPending() {
+        this.status = OutboxStatus.PENDING;
+    }
 }
