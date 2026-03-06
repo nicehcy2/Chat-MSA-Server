@@ -1,10 +1,13 @@
 package com.nicehcy.chatservice.entity;
 
 import com.nicehcy.chatservice.common.BaseEntity;
+import com.nicehcy.chatservice.entity.enums.OutboxStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Builder
@@ -16,24 +19,46 @@ public class Outbox extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "messageId", nullable = false, length = 19)
-    private String messageId;
+    @Column(name = "message_dto_payload", columnDefinition = "TEXT", nullable = false)
+    private String messageDtoPayload; // MessageDto JSON 직렬화
 
-    @Column(name = "chatRoomId", nullable = false)
-    private Long chatRoomId; // 목적지(전달할 그룹 채팅방) ID
+    @Column(name = "aggregate_type", nullable = false, length = 50)
+    private String aggregateType; // 어떤 도메인 이벤트인지
+    private String aggregateId;  // 이벤트 ID
 
-    @Column(name = "senderId", nullable = false)
-    private Long senderId; // 발신인 ID
+    @Column(name = "event_type", nullable = false, length = 50)
+    private String eventType; // 이벤트 종류
 
-    @Column(name = "messageType", nullable = false, length = 10)
-    private String messageType; // 메시지 타입(텍스트, 사진, 영수증)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OutboxStatus status;
 
-    private String content; // 메시지 내용
-    private String timestamp; // 타임스탬프
+    private int retryCount;
+    private LocalDateTime publishedAt;
+    private LocalDateTime failedAt;
 
-    @Column(name = "unreadCount", nullable = false)
-    private Integer unreadCount; // 읽지 않은 사용자
+    public Outbox(String aggregateType, String aggregateId, String eventType, String messageDtoPayload) {
 
-    private Integer publishRetryCount; // 메시지 전송 재시도 횟수
-    private Boolean saveStatus; // Redis 저장 여부
+        this.aggregateType = aggregateType;
+        this.eventType = eventType;
+        this.aggregateId = aggregateId;
+        this.messageDtoPayload = messageDtoPayload;
+        this.retryCount = 0;
+        this.status = OutboxStatus.PENDING;
+    }
+
+    public void markPublished() {
+        this.status = OutboxStatus.PUBLISHED;
+        this.publishedAt = LocalDateTime.now();
+    }
+
+    public void markFailed() {
+        this.status = OutboxStatus.FAILED;
+        this.failedAt = LocalDateTime.now();
+        this.retryCount++;
+    }
+
+    public void resetToPending() {
+        this.status = OutboxStatus.PENDING;
+    }
 }
