@@ -7,10 +7,10 @@ import java.time.LocalDateTime;
 
 public class MessageDtoIdInjector {
 
-    public static MessageDto generateMessageID(MessageDto messageDto) {
+    public static MessageDto withGeneratedMessageId(MessageDto messageDto) {
 
         return MessageDto.builder()
-                .id(String.valueOf(TsidCreator.getTsid().toLong())) // TSID ID 생성기, 시간에 따라 ID에 영향이 가고 최신 데이터일수록 ID 값이 커진다.
+                .id(String.valueOf(TsidCreator.getTsid().toLong())) //TSID 기반 ID 생성기, 시간에 따라 증가하는 값을 가지며 최신 데이터일수록 더 큰 uniqute한 ID가 생성된다.
                 .chatRoomId(messageDto.chatRoomId())
                 .senderId(messageDto.senderId())
                 .messageType(messageDto.messageType())
