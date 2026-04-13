@@ -27,11 +27,11 @@ public class ChatService {
         log.info("[1/4] 메시지 전송 프로세스 시작");
 
         // 메시지 DTO에 ID(TSID) 추가
-        MessageDto message = generateMessageID(messageDto);
+        final MessageDto message = generateMessageID(messageDto);
         log.info("[2/4] TSID 기반 메시지 ID 생성 완료: {}", message.id());
 
         // chatdb Message 테이블에 저장
-        messageRepository.save(MessageDtoConverter.toMessage(messageDto));
+        messageRepository.save(MessageDtoConverter.toMessage(message));
         log.info("[3/4] 채팅 메시지 저장 완료 - chatRoomId: {}, senderId: {}", message.chatRoomId(), message.senderId());
 
         // outbox 저장소에 저장
