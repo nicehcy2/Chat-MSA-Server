@@ -27,7 +27,7 @@ public class ResponseFilter {
         return (exchange, chain) -> {
             return chain.filter(exchange).then(Mono.fromRunnable(() -> {
                 Span span = tracer.currentSpan();
-                String traceId = span.context().traceId();
+                String traceId = span.context().traceId(); // Micrometer가 생성한 traceId
                 logger.info("Adding the correlation id to the outbound headers. {}", traceId);
                 exchange.getResponse().getHeaders().add(FilterUtils.CORRELATION_ID, traceId);
                 logger.info("Completing outgoing request for {}.", exchange.getRequest().getURI());
