@@ -1,5 +1,8 @@
 package com.nicehcy2.entity;
 
+import com.nicehcy2.entity.enums.AgeGroup;
+import com.nicehcy2.entity.enums.JobGroup;
+import com.nicehcy2.entity.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

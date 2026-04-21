@@ -1,8 +1,6 @@
 package com.nicehcy2.dto;
 
-import com.nicehcy2.entity.AgeGroup;
-import com.nicehcy2.entity.JobGroup;
-import com.nicehcy2.entity.UserRole;
+import com.nicehcy2.entity.enums.UserRole;
 import lombok.Builder;
 
 @Builder
