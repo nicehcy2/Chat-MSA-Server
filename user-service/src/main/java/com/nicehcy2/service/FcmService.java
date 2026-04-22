@@ -29,6 +29,8 @@ public class FcmService {
                 .token(fcmTokenRequestDto.fcmToken())
                 .build();
 
+        // Redis에도 저장
+
         FcmToken savedFcmToken = fcmRepository.save(fcmToken);
 
         return savedFcmToken.getId();
@@ -38,6 +40,8 @@ public class FcmService {
 
         FcmToken fcmToken = fcmRepository.findById(fcmTokenId)
                 .orElseThrow(() -> new RuntimeException("해당 ID를 가진 FCM Token이 존재하지 않습니다. " + fcmTokenId));
+
+        // Redis에서도 삭제
 
         fcmRepository.delete(fcmToken);
     }

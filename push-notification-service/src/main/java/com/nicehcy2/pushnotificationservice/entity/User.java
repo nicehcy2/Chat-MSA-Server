@@ -1,0 +1,75 @@
+package com.nicehcy2.pushnotificationservice.entity;
+
+import com.nicehcy2.entity.enums.AgeGroup;
+import com.nicehcy2.entity.enums.JobGroup;
+import com.nicehcy2.entity.enums.UserRole;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long userId;
+
+    @Column(name = "nickname", nullable = false, length = 20)
+    private String nickname;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_role", nullable = false)
+    private UserRole userRole;
+
+    @Column(name = "gender", nullable = false, length = 10)
+    private String gender;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "age_group", nullable = false)
+    private AgeGroup ageGroup;
+
+    @Column(name = "birthday", nullable = false)
+    private String birthDay;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "job_group", nullable = false)
+    private JobGroup jobGroup;
+
+    @Column(name = "email", length = 100, nullable = false)
+    private String email;
+
+    @Column(name = "password", length = 200, nullable = false)
+    private String password;
+
+    @Column(name="reward", nullable = false)
+    private int reward;
+
+    @Column(name="status", nullable = false)
+    private boolean status;
+
+    @Column(name="day_target_expenditure", nullable = false)
+    private int dayTargetExpenditure;
+
+    @Column(name = "inactive_date")
+    private LocalDateTime inactiveDate;
+
+    @Column(name = "profile_url")
+    private String imageUrl;
+
+    public void patch(String nickname, String gender, AgeGroup ageGroup, JobGroup jobGroup, String imageUrl) {
+        if (nickname != null) this.nickname = nickname;
+        if (gender != null) this.gender = gender;
+        if (ageGroup != null) this.ageGroup = ageGroup;
+        if (jobGroup != null) this.jobGroup = jobGroup;
+        if (imageUrl != null) this.imageUrl = imageUrl;
+    }
+}

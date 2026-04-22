@@ -1,4 +1,4 @@
-package com.nicehcy.chatservice.service;
+package com.nicehcy.chatservice.common;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
