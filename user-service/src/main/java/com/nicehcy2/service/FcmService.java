@@ -29,8 +29,16 @@ public class FcmService {
                 .token(fcmTokenRequestDto.fcmToken())
                 .build();
 
-        fcmRepository.save(fcmToken);
+        FcmToken savedFcmToken = fcmRepository.save(fcmToken);
 
-        return fcmToken.getId();
+        return savedFcmToken.getId();
+    }
+
+    public void deleteFcmToken(Long fcmTokenId) {
+
+        FcmToken fcmToken = fcmRepository.findById(fcmTokenId)
+                .orElseThrow(() -> new RuntimeException("해당 ID를 가진 FCM Token이 존재하지 않습니다. " + fcmTokenId));
+
+        fcmRepository.delete(fcmToken);
     }
 }

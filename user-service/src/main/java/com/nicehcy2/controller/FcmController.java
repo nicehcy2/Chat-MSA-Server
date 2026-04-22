@@ -17,7 +17,6 @@ public class FcmController {
 
     /**
      * 프론트에서 발급받은 FCM을 User DB에 저장
-     * @return
      */
     @PostMapping("/token")
     public ResponseEntity<Long> saveFcmToken(@RequestBody final FcmTokenRequestDto fcmTokenRequestDto) {
@@ -27,8 +26,10 @@ public class FcmController {
     }
 
     @DeleteMapping("/token")
-    public ResponseEntity<Void> deleteFcmToken() {
+    public ResponseEntity<Void> deleteFcmToken(final Long fcmTokenId) {
 
+        log.info("FCM 삭제 로직 시작");
+        fcmService.deleteFcmToken(fcmTokenId);
         return ResponseEntity.ok().build();
     }
 }

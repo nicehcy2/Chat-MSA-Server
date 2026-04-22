@@ -6,7 +6,7 @@ import com.nicehcy2.dto.LoginRequestDto;
 import com.nicehcy2.dto.LoginResponseDto;
 import com.nicehcy2.dto.SignupRequestDto;
 import com.nicehcy2.entity.User;
-import com.nicehcy2.entity.UserRole;
+import com.nicehcy2.entity.enums.UserRole;
 import com.nicehcy2.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
