@@ -391,3 +391,31 @@ services:
     networks:
       - kafka_network
       - backend
+
+  user-service:
+    image: user-service:latest
+    container_name: user-service
+    ports:
+      - "8030:8030"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_HOST=configserver
+      - CONFIG_PORT=7071
+    networks:
+      backend:
+        aliases:
+          - "user-service"
+
+  chat-api-service:
+    image: chat-api-service:latest
+    container_name: chat-api-service
+    ports:
+      - "8180:8180"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_HOST=configserver
+      - CONFIG_PORT=7071
+    networks:
+      backend:
+        aliases:
+          - "chat-api-service"
