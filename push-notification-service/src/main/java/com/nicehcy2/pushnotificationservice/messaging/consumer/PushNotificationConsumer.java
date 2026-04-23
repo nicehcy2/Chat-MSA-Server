@@ -20,14 +20,14 @@ public class PushNotificationConsumer {
     private final FcmTokenRepository fcmTokenRepository;
     private final PushNotificationService pushNotificationService;
 
-    @KafkaListener(topics = "${PUSH_NOTIFICATION_TOPIC:push-notification-topic}")
+    @KafkaListener(topics = "${PUSH_NOTIFICATION_TOPIC:push-notification-topic}", groupId = "${spring.kafka.consumer.group-id}")
     public void listenKafkaPushNotificationRecord(@Payload final PushNotificationRequestDto pushNotificationRequestDto) {
 
         log.info("푸시 알림 Kafka 리스너 메시지 수신 [{}]", pushNotificationRequestDto.messageDto().id());
 
         // 처음에는 Redis에서 조회
         // Redis에 없으면 DB 조회
-        List<String> fcmTokens = fcmTokenRepository.findByUserIdIn(pushNotificationRequestDto.targetOfflineUserIds())
+        List<String> fcmTokens = fcmTokenRepository.findByUserUserIdIn(pushNotificationRequestDto.targetOfflineUserIds())
                 .stream()
                 .map(FcmToken::getToken)
                 .toList();

@@ -10,5 +10,5 @@ import java.util.List;
 public interface FcmTokenRepository extends JpaRepository<FcmToken, Long> {
 
     // 여러 유저 ID로 토큰 한 번에 조회
-    List<FcmToken> findByUserIdIn(List<Long> userIds);
+    List<FcmToken> findByUserUserIdIn (List<Long> userIds);
 }

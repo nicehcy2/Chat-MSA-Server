@@ -419,3 +419,12 @@ services:
       backend:
         aliases:
           - "chat-api-service"
+
+  push-notification-service:
+    image: push-notification-service:latest
+    container_name: push-notification-service
+    ports:
+      - "8090:8090"
+    networks:
+      - kafka_network
+      - backend
