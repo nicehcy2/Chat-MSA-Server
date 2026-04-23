@@ -61,7 +61,7 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:10000
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://Kafka01Service:9092,EXTERNAL://Kafka01Service:10001
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://Kafka01Service:9092,EXTERNAL://Kafka01Service:10000
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 0@Kafka00Service:9093,1@Kafka01Service:9093,2@Kafka02Service:9093
@@ -87,7 +87,7 @@ services:
       KAFKA_NODE_ID: 2
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:10000
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://Kafka02Service:9092,EXTERNAL://Kafka02Service:10002
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://Kafka02Service:9092,EXTERNAL://Kafka02Service:10000
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 0@Kafka00Service:9093,1@Kafka01Service:9093,2@Kafka02Service:9093
@@ -342,7 +342,7 @@ services:
     image: chat-service:latest
     container_name: chat-service-1
     environment:
-      - CHAT_NODE_ID= chat-messages-group1
+      - CHAT_NODE_ID=chat-messages-group1
       - "ONLINE_KEY_PREFIX=socket:online:1:"
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_HOST=configserver
@@ -378,7 +378,7 @@ services:
     image: chat-service:latest
     container_name: chat-service-3
     environment:
-      - CHAT_NODE_ID= chat-messages-group3
+      - CHAT_NODE_ID=chat-messages-group3
       - "ONLINE_KEY_PREFIX=socket:online:3:"
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_HOST=configserver
