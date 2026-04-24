@@ -68,8 +68,11 @@ public class ChatKafkaConsumer {
             log.info("[6/6] STOMP over WebSocket을 통해 메시지 전송");
         }
 
-        // 푸시알림 토픽으로 카프카 메시지 전송
-        PushNotificationRequestDto pushDto = new PushNotificationRequestDto(messageDto, offlines);
-        chatKafkaProducer.producePushNotification(pushDto);
+        // offlines가 비어있으면 아예 produce 안 하도록
+        if (!offlines.isEmpty()) {
+            // 푸시알림 토픽으로 카프카 메시지 전송
+            PushNotificationRequestDto pushDto = new PushNotificationRequestDto(messageDto, offlines);
+            chatKafkaProducer.producePushNotification(pushDto);
+        }
     }
 }
