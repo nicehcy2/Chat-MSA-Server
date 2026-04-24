@@ -22,7 +22,6 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "*" # TODO
         spring.json.value.default.type: com.nicehcy2.pushnotificationservice.dto.PushNotificationRequestDto
   application:
     name: pushnotificationservice

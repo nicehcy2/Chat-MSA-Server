@@ -31,6 +31,8 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false  # 헤더 안 붙이도록 설정
     consumer:
       group-id: chat-messages-group
       auto-offset-reset: earliest
