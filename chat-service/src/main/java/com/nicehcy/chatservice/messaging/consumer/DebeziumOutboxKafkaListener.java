@@ -12,7 +12,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-
+// TODO: 이 로직 자체를 카프카에게 위임하는건 어떨까?
+// 카프카에서 처리할 수 있는 로직임에도 불필요한 스프링 서버와 카프카를 거치는 문제가 발생.
 @Service
 @Slf4j
 @RequiredArgsConstructor
