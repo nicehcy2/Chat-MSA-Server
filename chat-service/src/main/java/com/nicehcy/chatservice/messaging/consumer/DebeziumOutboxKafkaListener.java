@@ -12,7 +12,6 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Objects;
 
 @Service
 @Slf4j
@@ -35,7 +34,11 @@ public class DebeziumOutboxKafkaListener {
     public void sendMessage(ConsumerRecord<String, String> record) throws Exception {
 
         MessageDto messageDto = DebeziumMessageParser.parse(record.value());
-        log.info("[5/6] Kafka 리스너 수신 메시지 전체 내용: {}", Objects.requireNonNull(messageDto).id());
+        if (messageDto == null) {
+            log.debug("스킵 (INSERT 아님 또는 after 없음)");
+            return;
+        }
+        log.info("[5/6] Kafka 리스너 수신 메시지: {}", messageDto.id());
 
         // TODO: PENDING인것만 처리
 
