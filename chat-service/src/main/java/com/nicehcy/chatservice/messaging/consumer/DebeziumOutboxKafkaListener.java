@@ -1,5 +1,6 @@
-package com.nicehcy.chatservice.service;
+package com.nicehcy.chatservice.messaging.consumer;
 
+import com.nicehcy.chatservice.common.DebeziumMessageParser;
 import com.nicehcy.chatservice.dto.MessageDto;
 import com.nicehcy.chatservice.entity.Outbox;
 import com.nicehcy.chatservice.repository.OutboxRepository;

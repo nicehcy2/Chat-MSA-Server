@@ -61,7 +61,7 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:10000
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://Kafka01Service:9092,EXTERNAL://Kafka01Service:10001
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://Kafka01Service:9092,EXTERNAL://Kafka01Service:10000
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 0@Kafka00Service:9093,1@Kafka01Service:9093,2@Kafka02Service:9093
@@ -87,7 +87,7 @@ services:
       KAFKA_NODE_ID: 2
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:10000
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://Kafka02Service:9092,EXTERNAL://Kafka02Service:10002
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://Kafka02Service:9092,EXTERNAL://Kafka02Service:10000
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 0@Kafka00Service:9093,1@Kafka01Service:9093,2@Kafka02Service:9093
@@ -300,6 +300,10 @@ services:
     container_name: eurekaserver
     ports:
       - "8070:8070"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_HOST=configserver
+      - CONFIG_PORT=7071
     networks:
       backend:
         aliases:
@@ -310,6 +314,10 @@ services:
     container_name: gatewayserver
     ports:
       - "8072:8072"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_HOST=configserver
+      - CONFIG_PORT=7071
     networks:
       backend:
         aliases:
@@ -334,8 +342,11 @@ services:
     image: chat-service:latest
     container_name: chat-service-1
     environment:
-      - CHAT_NODE_ID= chat-messages-group1
+      - CHAT_NODE_ID=chat-messages-group1
       - "ONLINE_KEY_PREFIX=socket:online:1:"
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_HOST=configserver
+      - CONFIG_PORT=7071
     ports:
       - "8080:8080"
     depends_on:
@@ -351,6 +362,9 @@ services:
     environment:
       - CHAT_NODE_ID=chat-messages-group2
       - "ONLINE_KEY_PREFIX=socket:online:2:"
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_HOST=configserver
+      - CONFIG_PORT=7071
     ports:
       - "8081:8080"
     depends_on:
@@ -364,13 +378,53 @@ services:
     image: chat-service:latest
     container_name: chat-service-3
     environment:
-      - CHAT_NODE_ID= chat-messages-group3
+      - CHAT_NODE_ID=chat-messages-group3
       - "ONLINE_KEY_PREFIX=socket:online:3:"
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_HOST=configserver
+      - CONFIG_PORT=7071
     ports:
       - "8082:8080"
     depends_on:
       - mysql
       - redis
+    networks:
+      - kafka_network
+      - backend
+
+  user-service:
+    image: user-service:latest
+    container_name: user-service
+    ports:
+      - "8030:8030"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_HOST=configserver
+      - CONFIG_PORT=7071
+    networks:
+      backend:
+        aliases:
+          - "user-service"
+
+  chat-api-service:
+    image: chat-api-service:latest
+    container_name: chat-api-service
+    ports:
+      - "8180:8180"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_HOST=configserver
+      - CONFIG_PORT=7071
+    networks:
+      backend:
+        aliases:
+          - "chat-api-service"
+
+  push-notification-service:
+    image: push-notification-service:latest
+    container_name: push-notification-service
+    ports:
+      - "8090:8090"
     networks:
       - kafka_network
       - backend

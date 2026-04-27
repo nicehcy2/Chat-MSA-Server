@@ -1,4 +1,4 @@
-package com.nicehcy.chatservice.service;
+package com.nicehcy.chatservice.common;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,14 +19,12 @@ public class DebeziumMessageParser {
         }
 
         String op = payload.path("op").asText("");
-        // 스냅샷을 건너뛰려면 다음 줄 주석 해제
-        // if ("r".equals(op)) return null;
+        if (!"c".equals(op)) return null; // INSERT만 처리
 
-        // c/u 는 after, d 는 before
-        JsonNode row = "d".equals(op) ? payload.path("before") : payload.path("after");
+        JsonNode row = payload.path("after");
         if (row.isMissingNode() || row.isNull()) return null;
 
-        String messagePayload = reqText(row, "payload");
+        String messagePayload = reqText(row, "message_dto_payload");
         return MessagePayloadConverter.toMessageDto(messagePayload);
     }
 

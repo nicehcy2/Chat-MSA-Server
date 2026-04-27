@@ -2,6 +2,7 @@ CHAT_NODE_ID: chat-messages-group1 # 컨테이너/vm마다 고유값 주입
 ONLINE_KEY_PREFIX: 'socket:online:1:'
 OUTBOX_KAFKA_TOPIC: 'cdc.chatdb.outbox'
 OUTBOX_GROUP_ID: 'chat-outbox-consumers'
+PUSH_NOTIFICATION_TOPIC: 'push-notification-topic'
 
 spring:
   datasource:
@@ -30,6 +31,8 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false  # 헤더 안 붙이도록 설정
     consumer:
       group-id: chat-messages-group
       auto-offset-reset: earliest

@@ -1,8 +1,8 @@
-package com.nicehcy2.entity;
+package com.nicehcy2.pushnotificationservice.entity;
 
-import com.nicehcy2.entity.enums.AgeGroup;
-import com.nicehcy2.entity.enums.JobGroup;
-import com.nicehcy2.entity.enums.UserRole;
+import com.nicehcy2.pushnotificationservice.entity.enums.AgeGroup;
+import com.nicehcy2.pushnotificationservice.entity.enums.JobGroup;
+import com.nicehcy2.pushnotificationservice.entity.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

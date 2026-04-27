@@ -1,4 +1,4 @@
-package com.nicehcy2.entity;
+package com.nicehcy2.entity.enums;
 
 import lombok.Getter;
 
