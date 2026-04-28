@@ -43,6 +43,7 @@ public class ChatKafkaConsumer {
             return;
         }
 
+        // TODO: 메시지마다 RDB를 접근하는건 위험할 수도 있어서 리팩토링하자
         // 해당 채팅방에 모든 멤버 조회
         List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findByChatRoomId(messageDto.chatRoomId());
         List<Long> userIds = memberships.stream()
@@ -57,14 +58,14 @@ public class ChatKafkaConsumer {
                 .toList();
 
         List<String> onlineInfos = redisTemplate.opsForValue().multiGet(redisKeys); // MGET
-        if (onlineInfos == null) onlineInfos = List.of();
-
-        int n = Math.min(userIds.size(), onlineInfos.size());
         List<Long> onlines = new ArrayList<>(), offlines = new ArrayList<>();
-        for (int i = 0; i < n; i++) {
 
-            // 값이 null이면 키 없음 = 오프라인
-            if (onlineInfos.get(i) != null) onlines.add(userIds.get(i));
+        for (int i = 0; i < userIds.size(); i++) {
+            String onlineInfo = onlineInfos != null && i < onlineInfos.size()
+                    ? onlineInfos.get(i)
+                    : null;
+
+            if (onlineInfo != null) onlines.add(userIds.get(i));
             else offlines.add(userIds.get(i));
         }
 
@@ -85,7 +86,7 @@ public class ChatKafkaConsumer {
     // Redis SET NX: 키가 없으면 등록(true) + 처리 진행, 이미 있으면(false) 중복으로 스킵
     private boolean tryMarkAsProcessed(String messageId) {
         try {
-            String key = "processed:" + chatNodeId + ":" + messageId;
+            String key = "processed:ws:" + chatNodeId + ":" + messageId;
             Boolean isNew = redisTemplate.opsForValue().setIfAbsent(key, "1", Duration.ofDays(idempotencyTtlDays));
             return Boolean.TRUE.equals(isNew);
         } catch (Exception e) {
