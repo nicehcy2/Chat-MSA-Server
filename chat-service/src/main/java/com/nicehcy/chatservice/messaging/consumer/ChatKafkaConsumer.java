@@ -30,8 +30,7 @@ public class ChatKafkaConsumer {
 
     @Value("${ONLINE_KEY_PREFIX}") private String ONLINE_KEY_PREFIX;
     @Value("${CHAT_NODE_ID}") private String chatNodeId;
-
-    private static final Duration IDEMPOTENCY_TTL = Duration.ofDays(1);
+    @Value("${IDEMPOTENCY_TTL_DAYS:1}") private long idempotencyTtlDays;
 
     // 다중 채팅 서버 적용 시 각 채팅 서버마다 groupId를 다르게 설정해야 한다.
     @KafkaListener(topics = "${CHAT_TOPIC:chat-topic}", groupId = "${CHAT_NODE_ID}")
@@ -87,7 +86,7 @@ public class ChatKafkaConsumer {
     private boolean tryMarkAsProcessed(String messageId) {
         try {
             String key = "processed:" + chatNodeId + ":" + messageId;
-            Boolean isNew = redisTemplate.opsForValue().setIfAbsent(key, "1", IDEMPOTENCY_TTL);
+            Boolean isNew = redisTemplate.opsForValue().setIfAbsent(key, "1", Duration.ofDays(idempotencyTtlDays));
             return Boolean.TRUE.equals(isNew);
         } catch (Exception e) {
             log.warn("Redis 멱등성 체크 실패 - 중복 허용하고 처리 진행: {}", e.getMessage());
