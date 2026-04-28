@@ -14,6 +14,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +30,7 @@ public class ChatKafkaConsumer {
 
     @Value("${ONLINE_KEY_PREFIX}") private String ONLINE_KEY_PREFIX;
     @Value("${CHAT_NODE_ID}") private String chatNodeId;
+    @Value("${IDEMPOTENCY_TTL_DAYS:1}") private long idempotencyTtlDays;
 
     // 다중 채팅 서버 적용 시 각 채팅 서버마다 groupId를 다르게 설정해야 한다.
     @KafkaListener(topics = "${CHAT_TOPIC:chat-topic}", groupId = "${CHAT_NODE_ID}")
@@ -36,8 +38,12 @@ public class ChatKafkaConsumer {
 
         log.info("[5/6] Kafka 리스너 메시지 수신 [{}]", messageDto.id());
 
-        // TODO:멱등성 확인
+        if (!tryMarkAsProcessed(messageDto.id())) {
+            log.debug("중복 메시지 스킵: {}", messageDto.id());
+            return;
+        }
 
+        // TODO: 메시지마다 RDB를 접근하는건 위험할 수도 있어서 리팩토링하자
         // 해당 채팅방에 모든 멤버 조회
         List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findByChatRoomId(messageDto.chatRoomId());
         List<Long> userIds = memberships.stream()
@@ -52,13 +58,14 @@ public class ChatKafkaConsumer {
                 .toList();
 
         List<String> onlineInfos = redisTemplate.opsForValue().multiGet(redisKeys); // MGET
-
-        int n = Math.min(userIds.size(), onlineInfos.size());
         List<Long> onlines = new ArrayList<>(), offlines = new ArrayList<>();
-        for (int i = 0; i < n; i++) {
 
-            // 값이 null이면 키 없음 = 오프라인
-            if (onlineInfos.get(i) != null) onlines.add(userIds.get(i));
+        for (int i = 0; i < userIds.size(); i++) {
+            String onlineInfo = onlineInfos != null && i < onlineInfos.size()
+                    ? onlineInfos.get(i)
+                    : null;
+
+            if (onlineInfo != null) onlines.add(userIds.get(i));
             else offlines.add(userIds.get(i));
         }
 
@@ -73,6 +80,18 @@ public class ChatKafkaConsumer {
             // 푸시알림 토픽으로 카프카 메시지 전송
             PushNotificationRequestDto pushDto = new PushNotificationRequestDto(messageDto, offlines);
             chatKafkaProducer.producePushNotification(pushDto);
+        }
+    }
+
+    // Redis SET NX: 키가 없으면 등록(true) + 처리 진행, 이미 있으면(false) 중복으로 스킵
+    private boolean tryMarkAsProcessed(String messageId) {
+        try {
+            String key = "processed:ws:" + chatNodeId + ":" + messageId;
+            Boolean isNew = redisTemplate.opsForValue().setIfAbsent(key, "1", Duration.ofDays(idempotencyTtlDays));
+            return Boolean.TRUE.equals(isNew);
+        } catch (Exception e) {
+            log.warn("Redis 멱등성 체크 실패 - 중복 허용하고 처리 진행: {}", e.getMessage());
+            return true;
         }
     }
 }
