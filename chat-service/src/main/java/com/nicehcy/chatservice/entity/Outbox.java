@@ -15,6 +15,9 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(indexes = {
+        @Index(name = "idx_outbox_created_at", columnList = "created_at")
+})
 public class Outbox extends BaseEntity {
 
     @Id
