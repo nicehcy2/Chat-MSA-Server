@@ -45,17 +45,17 @@ public class SocketSessionInterceptor implements ChannelInterceptor {
 
             // sessionAttributes에 userId 저장
             accessor.getSessionAttributes().put("userId", userId);
-            socketConnectionTracker.setUserOnline(Long.parseLong(userId));
+            socketConnectionTracker.setUserOnline(Long.parseLong(userId), accessor.getSessionId());
 
-            log.info("User {} is now ONLINE.", userId);
+            log.info("User {} is now ONLINE. (session: {})", userId, accessor.getSessionId());
         } else if (StompCommand.DISCONNECT.equals(accessor.getCommand())) {
 
             Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
             if (sessionAttributes != null && sessionAttributes.containsKey("userId")) {
                 Long userId = Long.parseLong((String) sessionAttributes.get("userId"));
-                socketConnectionTracker.setUserOffline(userId);
+                socketConnectionTracker.setUserOffline(userId, accessor.getSessionId());
 
-                log.info("User {} is now OFFLINE.", userId);
+                log.info("User {} is now OFFLINE. (session: {})", userId, accessor.getSessionId());
             }
         }
 

@@ -1,9 +1,7 @@
 package com.nicehcy.chatservice.messaging.consumer;
 
 import com.nicehcy.chatservice.dto.MessageDto;
-import com.nicehcy.chatservice.dto.PushNotificationRequestDto;
 import com.nicehcy.chatservice.entity.ChatRoomMembership;
-import com.nicehcy.chatservice.messaging.producer.ChatKafkaProducer;
 import com.nicehcy.chatservice.repository.ChatRoomMembershipRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +13,6 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Component
@@ -24,11 +20,8 @@ import java.util.List;
 public class ChatKafkaConsumer {
 
     private final SimpMessagingTemplate messagingTemplate;
-    private final ChatRoomMembershipRepository chatRoomMembershipRepository;
     private final RedisTemplate<String, String> redisTemplate;
-    private final ChatKafkaProducer chatKafkaProducer;
 
-    @Value("${ONLINE_KEY_PREFIX}") private String ONLINE_KEY_PREFIX;
     @Value("${CHAT_NODE_ID}") private String chatNodeId;
     @Value("${IDEMPOTENCY_TTL_DAYS:1}") private long idempotencyTtlDays;
 
@@ -43,44 +36,9 @@ public class ChatKafkaConsumer {
             return;
         }
 
-        // TODO: 메시지마다 RDB를 접근하는건 위험할 수도 있어서 리팩토링하자
-        // 해당 채팅방에 모든 멤버 조회
-        List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findByChatRoomId(messageDto.chatRoomId());
-        List<Long> userIds = memberships.stream()
-                .map(ChatRoomMembership::getUserId)
-                // .filter(uid -> !uid.equals(messageDto.senderId()))
-                .toList();
-
-        if (userIds.isEmpty()) return;
-
-        List<String> redisKeys = userIds.stream()
-                .map(uid -> ONLINE_KEY_PREFIX + uid)
-                .toList();
-
-        List<String> onlineInfos = redisTemplate.opsForValue().multiGet(redisKeys); // MGET
-        List<Long> onlines = new ArrayList<>(), offlines = new ArrayList<>();
-
-        for (int i = 0; i < userIds.size(); i++) {
-            String onlineInfo = onlineInfos != null && i < onlineInfos.size()
-                    ? onlineInfos.get(i)
-                    : null;
-
-            if (onlineInfo != null) onlines.add(userIds.get(i));
-            else offlines.add(userIds.get(i));
-        }
-
-        if (!onlines.isEmpty()) {
-            final String destination = "/sub/chatroom" + messageDto.chatRoomId();
-            messagingTemplate.convertAndSend(destination, messageDto);
-            log.info("[6/6] STOMP over WebSocket을 통해 메시지 전송");
-        }
-
-        // offlines가 비어있으면 아예 produce 안 하도록
-        if (!offlines.isEmpty()) {
-            // 푸시알림 토픽으로 카프카 메시지 전송
-            PushNotificationRequestDto pushDto = new PushNotificationRequestDto(messageDto, offlines);
-            chatKafkaProducer.producePushNotification(pushDto);
-        }
+        final String destination = "/sub/chatroom" + messageDto.chatRoomId();
+        messagingTemplate.convertAndSend(destination, messageDto);
+        log.info("[6/6] STOMP over WebSocket을 통해 메시지 전송");
     }
 
     // Redis SET NX: 키가 없으면 등록(true) + 처리 진행, 이미 있으면(false) 중복으로 스킵
