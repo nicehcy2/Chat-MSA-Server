@@ -2,6 +2,8 @@ CHAT_NODE_ID: ${CHAT_NODE_ID} # 컨테이너/vm마다 고유값 주입
 ONLINE_KEY_PREFIX: 'socket:online:'
 OUTBOX_KAFKA_TOPIC: 'cdc.chatdb.outbox'
 OUTBOX_GROUP_ID: 'chat-outbox-consumers'
+PUSH_GROUP_ID: 'push-notification-group'
+CHAT_TOPIC: 'chat-topic'
 
 spring:
   datasource:
