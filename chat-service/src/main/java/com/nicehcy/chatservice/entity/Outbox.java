@@ -1,7 +1,6 @@
 package com.nicehcy.chatservice.entity;
 
 import com.nicehcy.chatservice.common.BaseEntity;
-import com.nicehcy.chatservice.entity.enums.OutboxStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,11 +33,6 @@ public class Outbox extends BaseEntity {
     @Column(name = "event_type", nullable = false, length = 50)
     private String eventType; // 이벤트 종류
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private OutboxStatus status;
-
-    private int retryCount;
     private LocalDateTime publishedAt;
     private LocalDateTime failedAt;
 
@@ -48,22 +42,5 @@ public class Outbox extends BaseEntity {
         this.eventType = eventType;
         this.aggregateId = aggregateId;
         this.messageDtoPayload = messageDtoPayload;
-        this.retryCount = 0;
-        this.status = OutboxStatus.PENDING;
-    }
-
-    public void markPublished() {
-        this.status = OutboxStatus.PUBLISHED;
-        this.publishedAt = LocalDateTime.now();
-    }
-
-    public void markFailed() {
-        this.status = OutboxStatus.FAILED;
-        this.failedAt = LocalDateTime.now();
-        this.retryCount++;
-    }
-
-    public void resetToPending() {
-        this.status = OutboxStatus.PENDING;
     }
 }
