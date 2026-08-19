@@ -8,7 +8,7 @@ public class MessageDtoConverter {
     public static MessageDto toMessageDto(final Message message) {
 
         return MessageDto.builder()
-                .id(message.getId())
+                .messageTSID(message.getId())
                 .chatRoomId(message.getChatRoomId())
                 .senderId(message.getSenderId())
                 .messageType(message.getMessageType())
