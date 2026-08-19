@@ -2,7 +2,7 @@ package com.nicehcy.chatservice.service;
 
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.*;
-import com.nicehcy.chatservice.dto.MessageDto;
+import com.nicehcy.chatservice.dto.MessageResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -13,13 +13,13 @@ import java.util.List;
 public class FcmService implements PushNotificationService {
 
     @Override
-    public void sendPushToOfflineUsers(MessageDto messageDto, List<String> fcmTokens) {
+    public void sendPushToOfflineUsers(MessageResponseDto messageDto, List<String> fcmTokens) {
 
         // 서비스 계정 키 없이 부팅된 환경(로컬 등)에서는 FirebaseApp이 초기화되지 않는다.
         // 이때 FirebaseMessaging.getInstance()가 IllegalStateException을 던져
         // Kafka 리스너 재시도를 유발하므로 여기서 스킵한다.
         if (FirebaseApp.getApps().isEmpty()) {
-            log.warn("Firebase 미초기화 - 푸시 전송 스킵 [{}]", messageDto.id());
+            log.warn("Firebase 미초기화 - 푸시 전송 스킵 [{}]", messageDto.messageTSID());
             return;
         }
 
@@ -36,8 +36,8 @@ public class FcmService implements PushNotificationService {
                 // 프론트에서 활용할 수 있는 데이터 페이로드
                 .putData("chatRoomId", String.valueOf(messageDto.chatRoomId()))
                 .putData("senderId", String.valueOf(messageDto.senderId()))
-                .putData("messageId", String.valueOf(messageDto.id()))
-                .putData("messageType", messageDto.messageType())
+                .putData("messageId", messageDto.messageTSID())
+                .putData("messageType", messageDto.messageType().name())
                 .build();
 
         // FCM 전송

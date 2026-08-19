@@ -1,7 +1,7 @@
 package com.nicehcy.chatservice.messaging.consumer;
 
 import com.nicehcy.chatservice.config.socket.SocketConnectionTracker;
-import com.nicehcy.chatservice.dto.MessageDto;
+import com.nicehcy.chatservice.dto.MessageResponseDto;
 import com.nicehcy.chatservice.entity.ChatRoomMembership;
 import com.nicehcy.chatservice.entity.FcmToken;
 import com.nicehcy.chatservice.repository.ChatRoomMembershipRepository;
@@ -34,9 +34,9 @@ public class PushNotificationConsumer {
     // 채팅 리스너(노드별 groupId)와 달리 모든 노드가 공유하는 groupId를 사용한다.
     // 메시지당 한 노드만 푸시를 처리하게 되어 중복 발송이 방지된다.
     @KafkaListener(topics = "${CHAT_TOPIC:chat-topic}", groupId = "${PUSH_GROUP_ID:push-notification-group}")
-    public void listenKafkaPushNotificationRecord(@Payload final MessageDto messageDto) {
+    public void listenKafkaPushNotificationRecord(@Payload final MessageResponseDto messageDto) {
 
-        log.info("푸시 알림 Kafka 리스너 메시지 수신 [{}]", messageDto.id());
+        log.info("푸시 알림 Kafka 리스너 메시지 수신 [{}]", messageDto.messageTSID());
 
         // 채팅방 멤버 중 발신자를 제외한 유저가 푸시 대상 후보
         List<Long> userIds = chatRoomMembershipRepository.findByChatRoomId(messageDto.chatRoomId())
@@ -52,20 +52,22 @@ public class PushNotificationConsumer {
 
         // 처음에는 Redis에서 조회
         // Redis에 없으면 DB 조회
+        // 같은 기기의 토큰이 중복 등록돼 있어도 한 번만 발송되도록 distinct 처리
         List<String> fcmTokens = fcmTokenRepository.findByUserUserIdIn(offlineUserIds)
                 .stream()
                 .map(FcmToken::getToken)
+                .distinct()
                 .toList();
 
         if (fcmTokens.isEmpty()) {
-            log.info("유효한 FCM 토큰 없음 - 푸시 전송 스킵 [{}]", messageDto.id());
+            log.info("유효한 FCM 토큰 없음 - 푸시 전송 스킵 [{}]", messageDto.messageTSID());
             return;
         }
 
         // 리밸런싱/재전달로 같은 메시지를 다시 받아도 중복 발송되지 않도록 가드.
         // 발송 직전에 두어야 앞 단계(조회) 실패가 재시도로 복구된다. 맨 앞에 두면 재시도가 스킵되어 푸시가 유실된다.
-        if (!tryMarkPushSent(messageDto.id())) {
-            log.debug("중복 푸시 스킵: {}", messageDto.id());
+        if (!tryMarkPushSent(messageDto.messageTSID())) {
+            log.debug("중복 푸시 스킵: {}", messageDto.messageTSID());
             return;
         }
 

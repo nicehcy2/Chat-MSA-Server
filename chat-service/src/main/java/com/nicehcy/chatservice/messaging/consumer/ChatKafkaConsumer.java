@@ -1,8 +1,6 @@
 package com.nicehcy.chatservice.messaging.consumer;
 
-import com.nicehcy.chatservice.dto.MessageDto;
-import com.nicehcy.chatservice.entity.ChatRoomMembership;
-import com.nicehcy.chatservice.repository.ChatRoomMembershipRepository;
+import com.nicehcy.chatservice.dto.MessageResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,12 +25,12 @@ public class ChatKafkaConsumer {
 
     // 다중 채팅 서버 적용 시 각 채팅 서버마다 groupId를 다르게 설정해야 한다.
     @KafkaListener(topics = "${CHAT_TOPIC:chat-topic}", groupId = "${CHAT_NODE_ID}")
-    public void listenKafkaChatMessage(@Payload final MessageDto messageDto) {
+    public void listenKafkaChatMessage(@Payload final MessageResponseDto messageDto) {
 
-        log.info("[5/6] Kafka 리스너 메시지 수신 [{}]", messageDto.id());
+        log.info("[5/6] Kafka 리스너 메시지 수신 [{}]", messageDto.messageTSID());
 
-        if (!tryMarkAsProcessed(messageDto.id())) {
-            log.debug("중복 메시지 스킵: {}", messageDto.id());
+        if (!tryMarkAsProcessed(messageDto.messageTSID())) {
+            log.debug("중복 메시지 스킵: {}", messageDto.messageTSID());
             return;
         }
 

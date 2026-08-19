@@ -1,6 +1,7 @@
 package com.nicehcy.chatservice.service;
 
-import com.nicehcy.chatservice.dto.MessageDto;
+import com.nicehcy.chatservice.dto.MessageResponseDto;
+import com.nicehcy.chatservice.dto.MessageSendRequestDto;
 import com.nicehcy.chatservice.dto.converter.MessageDtoConverter;
 import com.nicehcy.chatservice.dto.converter.MessagePayloadConverter;
 import com.nicehcy.chatservice.entity.Outbox;
@@ -22,17 +23,16 @@ public class ChatService {
     private final MessageRepository messageRepository;
 
     @Transactional
-    public void sendMessage(final MessageDto messageDto) {
+    public void sendMessage(final MessageSendRequestDto messageSendRequest, final Long senderId) {
 
         log.info("[1/4] 메시지 전송 프로세스 시작");
 
-        // 메시지 DTO에 ID(TSID) 추가
-        final MessageDto messageDtoWithId = withGeneratedMessageId(messageDto);
-        log.info("[2/4] TSID 기반 메시지 ID 생성 완료: {}", messageDtoWithId.id());
+        // 요청 DTO를 TSID/타임스탬프가 채워진 응답 DTO로 변환
+        final MessageResponseDto messageDtoWithId = withGeneratedMessageId(messageSendRequest, senderId);
+        log.info("[2/4] TSID 기반 메시지 ID 생성 완료: {}", messageDtoWithId.messageTSID());
 
         /**
-         * 같은 RDBMS에 저장되기 때문에 하나라도 저장에 실패할 경우,
-         * 롤백이 된다.
+         * 같은 RDBMS에 저장되기 때문에 하나라도 저장에 실패할 경우, 롤백이 된다.
          * Transactional 어노테이션을 통해 트랜잭션 원자성이 보장된다.
          */
         // chatdb Message 테이블에 저장
@@ -43,9 +43,9 @@ public class ChatService {
         log.info("[4/4] 메시지 Outbox 저장 완료 (chatRoomId: {}, senderId: {})", messageDtoWithId.chatRoomId(), messageDtoWithId.senderId());
     }
 
-    private void saveMessageToOutbox(MessageDto messageDto) {
+    private void saveMessageToOutbox(MessageResponseDto messageDto) {
 
-        Outbox outbox = new Outbox("CHAT",  messageDto.id(),"MESSAGE_SENT", MessagePayloadConverter.toJson(messageDto));
+        Outbox outbox = new Outbox("CHAT",  messageDto.chatRoomId().toString(),"MESSAGE_SENT", MessagePayloadConverter.toJson(messageDto));
         outboxRepository.save(outbox);
     }
 }

@@ -1,11 +1,16 @@
 package com.nicehcy.chatservice.entity;
 
+import com.nicehcy.chatservice.entity.enums.MessageType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Builder
 @Entity
@@ -22,14 +27,15 @@ public class Message {
     @Column(name = "sender_id")
     private Long senderId; // 발신인 ID
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "message_type")
-    private String messageType; // 메시지 타입(텍스트, 사진, 영수증)
+    private MessageType messageType; // 메시지 타입(텍스트, 사진, 영수증)
 
     @Column(name = "content")
     private String content; // 메시지 내용
 
     @Column(name = "timestamp")
-    private String timestamp; // 타임스탬프
+    private LocalDateTime timestamp; // 타임스탬프
 
     @Column(name = "unread_count")
     private Integer unreadCount; // 읽지 않은 사용자
