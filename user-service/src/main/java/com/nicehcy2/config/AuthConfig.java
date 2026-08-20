@@ -15,10 +15,10 @@ public class AuthConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        return http.
-                csrf(csrf -> csrf.disable())
+        // 인증/인가는 게이트웨이(JwtAuthorizationFilter)가 담당하므로 서비스 레벨에서는 전부 허용한다.
+        return http
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/login").permitAll()
                         .anyRequest().permitAll())
                 .build();
     }
