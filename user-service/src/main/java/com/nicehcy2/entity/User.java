@@ -1,5 +1,6 @@
 package com.nicehcy2.entity;
 
+import com.nicehcy2.dto.SignupRequestDto;
 import com.nicehcy2.entity.enums.AgeGroup;
 import com.nicehcy2.entity.enums.JobGroup;
 import com.nicehcy2.entity.enums.UserRole;
@@ -44,19 +45,20 @@ public class User {
     @Column(name = "job_group", nullable = false)
     private JobGroup jobGroup;
 
-    @Column(name = "email", length = 100, nullable = false)
+    // 중복 가입 방지는 DB 제약이 최종 방어선 (앱 레벨 existsByEmail 체크는 동시 요청에 뚫림)
+    @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
 
     @Column(name = "password", length = 200, nullable = false)
     private String password;
 
-    @Column(name="reward", nullable = false)
+    @Column(name = "reward", nullable = false)
     private int reward;
 
-    @Column(name="status", nullable = false)
+    @Column(name = "status", nullable = false)
     private boolean status;
 
-    @Column(name="day_target_expenditure", nullable = false)
+    @Column(name = "day_target_expenditure", nullable = false)
     private int dayTargetExpenditure;
 
     @Column(name = "inactive_date")
@@ -64,6 +66,28 @@ public class User {
 
     @Column(name = "profile_url")
     private String imageUrl;
+
+    /**
+     * 회원가입 전용 정적 팩토리.
+     * 권한(userRole)·리워드·상태는 클라이언트 입력을 받지 않고 서버가 초기값을 강제한다.
+     */
+    public static User of(SignupRequestDto dto, String encodedPassword) {
+
+        return User.builder()
+                .nickname(dto.nickname())
+                .email(dto.email())
+                .password(encodedPassword)
+                .userRole(UserRole.USER)
+                .gender(dto.gender())
+                .ageGroup(dto.ageGroup())
+                .birthDay(dto.birthDay())
+                .jobGroup(dto.jobGroup())
+                .imageUrl(dto.imageUrl())
+                .reward(0)
+                .status(true)
+                .inactiveDate(null)
+                .build();
+    }
 
     public void patch(String nickname, String gender, AgeGroup ageGroup, JobGroup jobGroup, String imageUrl) {
         if (nickname != null) this.nickname = nickname;
