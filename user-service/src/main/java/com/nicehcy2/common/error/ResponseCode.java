@@ -33,7 +33,8 @@ public enum ResponseCode {
     _METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "405", "허용되지 않는 요청 방식입니다."),
 
     // User Error
-    USER_PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, "USER401", "비밀번호가 일치하지 않습니다."),
+    // 로그인 실패는 이메일 부재/비밀번호 불일치를 구분하지 않는다. (계정 존재 여부 열거 방지)
+    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH401", "이메일 또는 비밀번호가 올바르지 않습니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404", "존재하지 않는 사용자입니다."),
     USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER409", "이미 존재하는 사용자입니다."),
 
@@ -47,6 +48,7 @@ public enum ResponseCode {
     // Redis(Session) Error
     SESSION_NOT_FOUND(HttpStatus.UNAUTHORIZED, "SESSION401", "세션이 존재하지 않습니다."),
     SESSION_REUSE_DETECTED(HttpStatus.UNAUTHORIZED, "SESSION4011", "토큰 재사용이 감지되어 세션이 만료되었습니다."),
+    SESSION_EXPIRED(HttpStatus.UNAUTHORIZED, "SESSION4012", "세션이 만료되었습니다. 다시 로그인해주세요."),
 
     // FCM Error
     FCM_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "FCM404", "존재하지 않는 FCM 토큰입니다.");
