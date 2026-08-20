@@ -45,4 +45,7 @@ public class ChatRoomMembership extends BaseEntity {
 
     @Column(name = "join_message_id")
     private Long joinMessageId;
+
+    @Column(name = "last_read_message_id")
+    private Long lastReadMessageId;
 }

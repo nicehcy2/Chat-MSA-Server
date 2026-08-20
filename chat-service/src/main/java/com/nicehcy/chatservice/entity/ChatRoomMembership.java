@@ -15,6 +15,9 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+// 워터마크 갱신(user_id + chatroom_id 조건 UPDATE)이 메시지 전송/읽음 처리마다 실행되므로,
+// FK 인덱스로 방 멤버 전체를 훑지 않고 행을 바로 찾도록 복합 인덱스를 둔다.
+@Table(indexes = @Index(name = "idx_membership_user_room", columnList = "user_id, chatroom_id"))
 public class ChatRoomMembership extends BaseEntity {
 
     @Id
@@ -45,4 +48,7 @@ public class ChatRoomMembership extends BaseEntity {
 
     @Column(name = "join_message_id")
     private Long joinMessageId;
+
+    @Column(name = "last_read_message_id")
+    private Long lastReadMessageId;
 }

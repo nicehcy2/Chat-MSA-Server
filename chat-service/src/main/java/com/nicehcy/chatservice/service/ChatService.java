@@ -5,6 +5,7 @@ import com.nicehcy.chatservice.dto.MessageSendRequestDto;
 import com.nicehcy.chatservice.dto.converter.MessageDtoConverter;
 import com.nicehcy.chatservice.dto.converter.MessagePayloadConverter;
 import com.nicehcy.chatservice.entity.Outbox;
+import com.nicehcy.chatservice.repository.ChatRoomMembershipRepository;
 import com.nicehcy.chatservice.repository.MessageRepository;
 import com.nicehcy.chatservice.repository.OutboxRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,15 +22,16 @@ public class ChatService {
 
     private final OutboxRepository outboxRepository;
     private final MessageRepository messageRepository;
+    private final ChatRoomMembershipRepository chatRoomMembershipRepository;
 
     @Transactional
     public void sendMessage(final MessageSendRequestDto messageSendRequest, final Long senderId) {
 
-        log.info("[1/4] 메시지 전송 프로세스 시작");
+        log.info("[1/5] 메시지 전송 프로세스 시작");
 
         // 요청 DTO를 TSID/타임스탬프가 채워진 응답 DTO로 변환
         final MessageResponseDto messageDtoWithId = withGeneratedMessageId(messageSendRequest, senderId);
-        log.info("[2/4] TSID 기반 메시지 ID 생성 완료: {}", messageDtoWithId.messageTSID());
+        log.info("[2/5] TSID 기반 메시지 ID 생성 완료: {}", messageDtoWithId.messageTSID());
 
         /**
          * 같은 RDBMS에 저장되기 때문에 하나라도 저장에 실패할 경우, 롤백이 된다.
@@ -37,10 +39,21 @@ public class ChatService {
          */
         // chatdb Message 테이블에 저장
         messageRepository.save(MessageDtoConverter.toMessage(messageDtoWithId));
-        log.info("[3/4] 채팅 메시지 저장 완료 - chatRoomId: {}, senderId: {}", messageDtoWithId.chatRoomId(), messageDtoWithId.senderId());
+        log.info("[3/5] 채팅 메시지 저장 완료 - chatRoomId: {}, senderId: {}", messageDtoWithId.chatRoomId(), messageDtoWithId.senderId());
         // outbox 저장소에 저장
         saveMessageToOutbox(messageDtoWithId);
-        log.info("[4/4] 메시지 Outbox 저장 완료 (chatRoomId: {}, senderId: {})", messageDtoWithId.chatRoomId(), messageDtoWithId.senderId());
+        log.info("[4/5] 메시지 Outbox 저장 완료 (chatRoomId: {}, senderId: {})", messageDtoWithId.chatRoomId(), messageDtoWithId.senderId());
+        // 발신자는 자기 메시지를 읽은 것으로 친다
+        advanceSenderWatermark(messageDtoWithId);
+        log.info("[5/5] 발신자 읽음 워터마크 갱신 완료 (senderId: {})", messageDtoWithId.senderId());
+    }
+
+    private void advanceSenderWatermark(final MessageResponseDto messageDto) {
+
+        chatRoomMembershipRepository.updateLastReadMessageId(
+                messageDto.chatRoomId(),
+                messageDto.senderId(),
+                Long.parseLong(messageDto.messageTSID()));
     }
 
     private void saveMessageToOutbox(MessageResponseDto messageDto) {
