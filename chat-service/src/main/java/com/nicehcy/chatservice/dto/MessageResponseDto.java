@@ -14,7 +14,6 @@ public record MessageResponseDto(
         Long senderId, // 발신인 ID
         MessageType messageType, // 메시지 타입(텍스트, 사진, 영수증)
         String content, // 메시지 내용
-        LocalDateTime timestamp, // 타임스탬프
-        Integer unreadCount // 읽지 않은 사용자
+        LocalDateTime timestamp // 타임스탬프
 ) {
 }

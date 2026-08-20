@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 public class Message {
 
     @Id
-    private String id;
+    private Long id;
 
     @Column(name = "chat_room_id")
     private Long chatRoomId; // 목적지(전달할 그룹 채팅방) ID
@@ -38,7 +38,4 @@ public class Message {
 
     @Column(name = "timestamp")
     private LocalDateTime timestamp; // 타임스탬프
-
-    @Column(name = "unread_count")
-    private Integer unreadCount; // 읽지 않은 사용자
 }

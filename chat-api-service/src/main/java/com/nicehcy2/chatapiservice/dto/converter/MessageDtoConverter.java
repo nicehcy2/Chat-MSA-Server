@@ -14,7 +14,6 @@ public class MessageDtoConverter {
                 .messageType(message.getMessageType())
                 .content(message.getContent())
                 .timestamp(message.getTimestamp())
-                .unreadCount(message.getUnreadCount())
                 .build();
     }
 }

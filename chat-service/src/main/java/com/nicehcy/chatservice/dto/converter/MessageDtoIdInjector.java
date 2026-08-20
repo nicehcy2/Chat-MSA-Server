@@ -18,7 +18,6 @@ public class MessageDtoIdInjector {
                 .messageType(messageSendRequest.messageType())
                 .content(messageSendRequest.content())
                 .timestamp(LocalDateTime.now())
-                .unreadCount(0)
                 .build();
     }
 }
