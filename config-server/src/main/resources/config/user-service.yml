@@ -23,7 +23,9 @@ server:
   port: 8030
 
 jwt:
-  expiration-time: 60
+  accesstoken-expiration-time: 60 # 초 단위
+  overlap-window: PT30S           # RT 회전 후 이전 RT 허용 창
+  refresh-ttl: P1D                # Refresh Token 만료 기간
   secret: ${JWT_SECRET}
 
 eureka:
