@@ -1,5 +1,7 @@
 package com.nicehcy2.service;
 
+import com.nicehcy2.common.error.ResponseCode;
+import com.nicehcy2.common.error.exception.UserHandler;
 import com.nicehcy2.dto.MyPageUserInfoResponseDto;
 import com.nicehcy2.dto.UserInfoRequestDto;
 import com.nicehcy2.entity.enums.AgeGroup;
@@ -19,7 +21,7 @@ public class UserService {
     public MyPageUserInfoResponseDto getUserInfo(Long userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("사용자가 없습니다."));
+                .orElseThrow(() -> new UserHandler(ResponseCode.USER_NOT_FOUND));
 
         return MyPageUserInfoResponseDto.builder()
                 .email(user.getEmail())
@@ -37,7 +39,7 @@ public class UserService {
     public void modifyUserProfile(Long userId, UserInfoRequestDto userInfoRequestDto) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("사용자가 없습니다."));
+                .orElseThrow(() -> new UserHandler(ResponseCode.USER_NOT_FOUND));
 
         user.patch(
                 userInfoRequestDto.nickname(),

@@ -1,5 +1,8 @@
 package com.nicehcy2.service;
 
+import com.nicehcy2.common.error.ResponseCode;
+import com.nicehcy2.common.error.exception.FcmHandler;
+import com.nicehcy2.common.error.exception.UserHandler;
 import com.nicehcy2.dto.FcmTokenRequestDto;
 import com.nicehcy2.entity.FcmToken;
 import com.nicehcy2.entity.User;
@@ -28,7 +31,7 @@ public class FcmService {
 
         User user = userRepository
                 .findById(fcmTokenRequestDto.userId())
-                .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
+                .orElseThrow(() -> new UserHandler(ResponseCode.USER_NOT_FOUND));
 
         // Redis에도 저장
 
@@ -51,7 +54,7 @@ public class FcmService {
     public void deleteFcmToken(Long fcmTokenId) {
 
         FcmToken fcmToken = fcmRepository.findById(fcmTokenId)
-                .orElseThrow(() -> new RuntimeException("해당 ID를 가진 FCM Token이 존재하지 않습니다. " + fcmTokenId));
+                .orElseThrow(() -> new FcmHandler(ResponseCode.FCM_TOKEN_NOT_FOUND));
 
         // Redis에서도 삭제
 

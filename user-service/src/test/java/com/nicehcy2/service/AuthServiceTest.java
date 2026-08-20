@@ -1,9 +1,11 @@
 package com.nicehcy2.service;
 
+import com.nicehcy2.common.error.exception.UserHandler;
 import com.nicehcy2.common.util.JwtUtil;
 import com.nicehcy2.dto.CustomUserInfoDto;
 import com.nicehcy2.dto.LoginRequestDto;
 import com.nicehcy2.dto.LoginResponseDto;
+import com.nicehcy2.dto.RedisSessionDto;
 import com.nicehcy2.dto.SignupRequestDto;
 import com.nicehcy2.entity.User;
 import com.nicehcy2.entity.enums.UserRole;
@@ -14,11 +16,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.time.Duration;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +41,12 @@ class AuthServiceTest {
 
     @Mock
     JwtUtil jwtUtil;
+
+    @Mock
+    RedisTemplate<String, RedisSessionDto> redisTemplate;
+
+    @Mock
+    ValueOperations<String, RedisSessionDto> valueOperations;
 
     @InjectMocks
     // 테스트 대상 "실제 객체"
@@ -60,18 +73,26 @@ class AuthServiceTest {
         // User 엔티티도 실제 DB 대신 mock 사용
         User user = mock(User.class);
 
-        when(userRepository.findUserByEmail(email))
-                .thenReturn(user);
+        when(userRepository.findByEmail(email))
+                .thenReturn(Optional.of(user));
 
         // User 객체의 getter 호출 결과를 미리 정의
         when(user.getPassword()).thenReturn("1234");
 
         // 비밀번호 비교 결과를 true로 설정 (로그인 성공 상황)
-        // 어차피 encode는 실제 코드에서 알아서 해준다. 디코드 했을 때 같은 값이면 true가 나와야 됨.
-        when(encoder.matches(user.getPassword(), password))
+        when(encoder.matches(password, user.getPassword()))
                 .thenReturn(true);
+
+        // Redis 저장 경로 stub
+        when(jwtUtil.getREFRESH_TTL()).thenReturn(Duration.ofDays(1));
+        when(jwtUtil.generateJTI()).thenReturn("JTI");
+        when(jwtUtil.generateFamilyId()).thenReturn("FAMILY_ID");
+        when(jwtUtil.generateRefreshToken()).thenReturn("REFRESH_TOKEN");
+        when(jwtUtil.generateSHA256Token(anyString())).thenReturn("RT_HASH");
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
         // JWT 생성 시 항상 "TOKEN" 문자열 반환하도록 설정
-        when(jwtUtil.createAccessToken(any(CustomUserInfoDto.class)))
+        when(jwtUtil.createAccessToken(any(CustomUserInfoDto.class), anyString()))
                 .thenReturn("TOKEN");
 
         // === when ===
@@ -79,6 +100,8 @@ class AuthServiceTest {
 
         // === then ===
         assertEquals("TOKEN", jwtToken.accessToken());
+        assertEquals("REFRESH_TOKEN", jwtToken.refreshToken());
+        assertEquals("FAMILY_ID", jwtToken.sessionId());
     }
 
     @Test
@@ -90,18 +113,31 @@ class AuthServiceTest {
 
         User user = mock(User.class);
 
-        when(userRepository.findUserByEmail(email))
-                .thenReturn(user);
-        when(user.getPassword()).thenReturn(password);
+        when(userRepository.findByEmail(email))
+                .thenReturn(Optional.of(user));
+        when(user.getPassword()).thenReturn("encoded");
 
-        // 비밀번호 비교 결과를 true로 설정 (로그인 성공 상황)
-        // 어차피 encode는 실제 코드에서 알아서 해준다. 디코드 했을 때 같은 값이면 true가 나와야 됨.
-        when(encoder.matches(user.getPassword(), password))
+        // 비밀번호 비교 결과를 false로 설정 (로그인 실패 상황)
+        when(encoder.matches(password, user.getPassword()))
                 .thenReturn(false);
 
-        // === when ===
+        // === when / then ===
         assertThrows(
-                BadCredentialsException.class,
+                UserHandler.class,
+                () -> authService.login(loginRequestDto)
+        );
+    }
+
+    @Test
+    void login_실패_이메일_없음() {
+
+        // given
+        when(userRepository.findByEmail(loginRequestDto.email()))
+                .thenReturn(Optional.empty());
+
+        // === when / then ===
+        assertThrows(
+                UserHandler.class,
                 () -> authService.login(loginRequestDto)
         );
     }
@@ -117,25 +153,24 @@ class AuthServiceTest {
                 .gender("M")
                 .imageUrl("heo.jpg")
                 .nickname("heo")
-                .userRole(UserRole.USER)
                 .build();
 
         User savedUser = User.builder()
                 .userId(1L)
                 .email("nicehcy222@naver.com")
-                .password("1234")
+                .password("*1234")
                 .gender("M")
                 .imageUrl("heo.jpg")
                 .nickname("heo")
                 .userRole(UserRole.USER)
                 .build();
 
-        when(userRepository.findUserByEmail(signup.email()))
-                .thenReturn(null);
+        when(userRepository.existsByEmail(signup.email()))
+                .thenReturn(false);
         when(userRepository.save(any(User.class)))
                 .thenReturn(savedUser);
         when(encoder.encode(signup.password()))
-                .thenReturn(("*1234"));
+                .thenReturn("*1234");
 
         // === when ===
         Long userId = authService.signup(signup);
@@ -145,7 +180,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void 회원가입_실패() {
+    void 회원가입_실패_이메일_중복() {
 
         // === given ===
         SignupRequestDto signup = SignupRequestDto
@@ -155,17 +190,13 @@ class AuthServiceTest {
                 .gender("M")
                 .imageUrl("heo.jpg")
                 .nickname("heo")
-                .userRole(UserRole.USER)
                 .build();
 
-        User user = mock(User.class);
+        when(userRepository.existsByEmail(signup.email()))
+                .thenReturn(true);
 
-        // === when ===
-        when(userRepository.findUserByEmail(signup.email()))
-                .thenReturn(user);
-
-        // === then ===
-        assertThrows(RuntimeException.class,
+        // === when / then ===
+        assertThrows(UserHandler.class,
                 () -> authService.signup(signup));
     }
 }

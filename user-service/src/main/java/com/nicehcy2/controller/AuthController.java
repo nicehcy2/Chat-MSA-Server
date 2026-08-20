@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final CookieUtil cookieUtil;
 
     @PostMapping("login")
     public ResponseEntity<AccessTokenResponseDto> createAuthToken(
@@ -22,16 +23,16 @@ public class AuthController {
 
         LoginResponseDto loginResponse = authService.login(requestDto);
 
-        // RefreshToken과 SessionId는 쿠키를 사용하서 클라이언트로 보내준다.
+        // RefreshToken과 SessionId는 쿠키를 사용해서 클라이언트로 보내준다.
         // HttpOnly를 사용해서 JS로 세션 정보를 탈취하지 못하도록 한다. XSS 공격 방지
-        CookieUtil.addAuthCookies(
+        cookieUtil.addAuthCookies(
                 response,
                 loginResponse.refreshToken(),
                 loginResponse.sessionId());
 
         // AccessToken은 응답으로 보내준다.
-        // 클라이언트는 클라이언트의 메모리에 AccessToken을 보내준다.
-        // AccessToken은 암호화가 되어 있는 토큰이 아니므로 중요한 개인정보를 저장하며 안된다.
+        // 클라이언트는 클라이언트의 메모리에 AccessToken을 보관한다.
+        // AccessToken은 암호화가 되어 있는 토큰이 아니므로 중요한 개인정보를 저장하면 안된다.
         // 공격을 당할 가능성이 있기에 AccessToken의 만료 시간은 짧게 설정한다.
         AccessTokenResponseDto accessTokenResponseDto = AccessTokenResponseDto.builder()
                 .accessToken(loginResponse.accessToken())
@@ -49,7 +50,7 @@ public class AuthController {
     ) {
 
         LoginResponseDto responseDto = authService.refresh(refreshToken, sessionId);
-        CookieUtil.addAuthCookies(response,
+        cookieUtil.addAuthCookies(response,
                 responseDto.refreshToken(),
                 responseDto.sessionId());
 
