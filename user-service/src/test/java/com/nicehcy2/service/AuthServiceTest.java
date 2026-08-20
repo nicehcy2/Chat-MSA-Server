@@ -1,5 +1,7 @@
 package com.nicehcy2.service;
 
+import com.nicehcy2.common.error.ResponseCode;
+import com.nicehcy2.common.error.exception.RedisHandler;
 import com.nicehcy2.common.error.exception.UserHandler;
 import com.nicehcy2.common.util.JwtUtil;
 import com.nicehcy2.dto.CustomUserInfoDto;
@@ -21,12 +23,14 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -122,10 +126,11 @@ class AuthServiceTest {
                 .thenReturn(false);
 
         // === when / then ===
-        assertThrows(
+        UserHandler e = assertThrows(
                 UserHandler.class,
                 () -> authService.login(loginRequestDto)
         );
+        assertEquals(ResponseCode.USER_PASSWORD_MISMATCH, e.getErrorCode());
     }
 
     @Test
@@ -136,10 +141,44 @@ class AuthServiceTest {
                 .thenReturn(Optional.empty());
 
         // === when / then ===
-        assertThrows(
+        UserHandler e = assertThrows(
                 UserHandler.class,
                 () -> authService.login(loginRequestDto)
         );
+        assertEquals(ResponseCode.USER_NOT_FOUND, e.getErrorCode());
+    }
+
+    @Test
+    void refresh_실패_절대만료() {
+
+        // given: 절대 만료 시각이 이미 지난 세션
+        RedisSessionDto expiredSession = RedisSessionDto.builder()
+                .rtHash("RT_HASH")
+                .expiresAtEpoch(Instant.now().getEpochSecond() - 10)
+                .build();
+
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get(anyString())).thenReturn(expiredSession);
+
+        // === when / then ===
+        RedisHandler e = assertThrows(
+                RedisHandler.class,
+                () -> authService.refresh("REFRESH_TOKEN", "SESSION_ID")
+        );
+        assertEquals(ResponseCode.SESSION_EXPIRED, e.getErrorCode());
+
+        // 만료된 세션은 Redis에서 삭제되어야 한다
+        verify(redisTemplate).delete("rt:session:SESSION_ID");
+    }
+
+    @Test
+    void logout_세션_삭제() {
+
+        // === when ===
+        authService.logout("SESSION_ID");
+
+        // === then ===
+        verify(redisTemplate).delete("rt:session:SESSION_ID");
     }
 
     @Test

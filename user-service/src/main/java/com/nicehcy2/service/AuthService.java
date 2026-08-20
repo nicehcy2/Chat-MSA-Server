@@ -14,6 +14,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -92,6 +93,16 @@ public class AuthService {
                 redisTemplate.opsForValue().get(RedisKeyNamingUtil.refreshTokenKey(sessionId))
         ).orElseThrow(() -> new RedisHandler(ResponseCode.SESSION_NOT_FOUND));
 
+        final long now = Instant.now().getEpochSecond();
+
+        // 1-1. 절대 만료 검증
+        // 로그인 시점에 정한 만료 시각은 refresh로 연장되지 않는다.
+        // (이 검증이 없으면 주기적으로 refresh만 해도 세션이 영구히 유지된다)
+        if (now >= sessionDto.expiresAtEpoch()) {
+            redisTemplate.delete(RedisKeyNamingUtil.refreshTokenKey(sessionId));
+            throw new RedisHandler(ResponseCode.SESSION_EXPIRED);
+        }
+
         // 2. 현재 RT 검증 (현재 유효한 해시인지 비교)
         // Refresh 되면 rtHash 값이 바뀐다. 즉, 이전 RefreshToken을 사용할 경우, 인증에 실패한다.
         final boolean isCurrentRt = sessionDto.rtHash().equals(incomingRtHash);
@@ -101,7 +112,6 @@ public class AuthService {
         // 네트워크 문제나 동시 refresh를 할 경우, 정상적인 접근에도 인증에 실패할 수 있다.
         // 조금의 오차를 허용해줘서 사용자 경험을 개선한다.
         boolean isPrevRt = false;
-        final long now = Instant.now().getEpochSecond();
         if (!isCurrentRt && sessionDto.prevRtHash() != null && sessionDto.rotatedAtEpoch() != null) {
 
             long secondsSinceRotation = now - sessionDto.rotatedAtEpoch();
@@ -122,7 +132,6 @@ public class AuthService {
         final String jti = jwtUtil.generateJTI();
         final String newRefreshToken = jwtUtil.generateRefreshToken(); // 새로운 refreshToken 발급
         final String newRtHash = jwtUtil.generateSHA256Token(newRefreshToken); // 새로운 rtHash 발급
-        final long newRtExp = Instant.now().plus(jwtUtil.getREFRESH_TTL()).getEpochSecond();
 
         // AccessToken 생성용 User 정보 초기화
         final CustomUserInfoDto customUserInfoDto = CustomUserInfoDto.builder()
@@ -140,12 +149,14 @@ public class AuthService {
                 // 이전 RT 기록: overlap 요청이었으면 prevRtHash 유지, 정상 rotate면 현재 걸 prev로
                 .prevRtHash(isCurrentRt ? sessionDto.rtHash() : sessionDto.prevRtHash())
                 .rotatedAtEpoch(isCurrentRt ? now : sessionDto.rotatedAtEpoch()) // prevRt면 갱신 안 함
-                .expiresAtEpoch(newRtExp)
+                .expiresAtEpoch(sessionDto.expiresAtEpoch()) // 절대 만료는 회전해도 그대로 유지
                 .build();
 
         // Redis에 새로운 세션 + refresh Token 저장
+        // TTL은 절대 만료까지 남은 시간으로 설정한다. (REFRESH_TTL로 다시 설정하면 만료가 계속 밀린다)
         redisTemplate.opsForValue()
-                .set(RedisKeyNamingUtil.refreshTokenKey(sessionId), newRedisSessionDto, jwtUtil.getREFRESH_TTL());
+                .set(RedisKeyNamingUtil.refreshTokenKey(sessionId), newRedisSessionDto,
+                        Duration.ofSeconds(sessionDto.expiresAtEpoch() - now));
 
         final String newAccessToken = jwtUtil.createAccessToken(customUserInfoDto, jti); // 새로운 AccessToken 발급
         return LoginResponseDto.builder()
@@ -176,5 +187,14 @@ public class AuthService {
     public boolean checkEmailDuplicate(String email) {
 
         return userRepository.existsByEmail(email);
+    }
+
+    /**
+     * 로그아웃: 세션(토큰 family) 전체를 폐기한다.
+     * 이미 세션이 없어도 성공으로 처리한다. (멱등)
+     */
+    public void logout(String sessionId) {
+
+        redisTemplate.delete(RedisKeyNamingUtil.refreshTokenKey(sessionId));
     }
 }
