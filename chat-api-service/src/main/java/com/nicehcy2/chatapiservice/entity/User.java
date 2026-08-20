@@ -43,19 +43,21 @@ public class User {
     @Column(name = "job_group", nullable = false)
     private JobGroup jobGroup;
 
-    @Column(name = "email", length = 100, nullable = false)
+    // 중복 가입 방지는 DB 제약이 최종 방어선 (앱 레벨 existsByEmail 체크는 동시 요청에 뚫림)
+    @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password", length = 200, nullable = false)
+    // BCrypt 해시는 항상 60자 고정
+    @Column(name = "password", length = 60, nullable = false)
     private String password;
 
-    @Column(name="reward", nullable = false)
+    @Column(name = "reward", nullable = false)
     private int reward;
 
-    @Column(name="status", nullable = false)
+    @Column(name = "status", nullable = false)
     private boolean status;
 
-    @Column(name="day_target_expenditure", nullable = false)
+    @Column(name = "day_target_expenditure", nullable = false)
     private int dayTargetExpenditure;
 
     @Column(name = "inactive_date")
