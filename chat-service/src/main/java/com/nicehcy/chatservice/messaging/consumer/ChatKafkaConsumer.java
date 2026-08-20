@@ -27,7 +27,7 @@ public class ChatKafkaConsumer {
     @KafkaListener(topics = "${CHAT_TOPIC:chat-topic}", groupId = "${CHAT_NODE_ID}")
     public void listenKafkaChatMessage(@Payload final MessageResponseDto messageDto) {
 
-        log.info("[5/6] Kafka 리스너 메시지 수신 [{}]", messageDto.messageTSID());
+        log.info("[6/7] Kafka 리스너 메시지 수신 [{}]", messageDto.messageTSID());
 
         if (!tryMarkAsProcessed(messageDto.messageTSID())) {
             log.debug("중복 메시지 스킵: {}", messageDto.messageTSID());
@@ -36,7 +36,7 @@ public class ChatKafkaConsumer {
 
         final String destination = "/sub/chatroom" + messageDto.chatRoomId();
         messagingTemplate.convertAndSend(destination, messageDto);
-        log.info("[6/6] STOMP over WebSocket을 통해 메시지 전송");
+        log.info("[7/7] STOMP over WebSocket을 통해 메시지 전송");
     }
 
     // Redis SET NX: 키가 없으면 등록(true) + 처리 진행, 이미 있으면(false) 중복으로 스킵
