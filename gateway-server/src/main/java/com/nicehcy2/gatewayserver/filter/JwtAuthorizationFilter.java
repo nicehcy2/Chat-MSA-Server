@@ -22,6 +22,7 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
     private static final Set<String> WHITELIST = Set.of(
             "/user-service/login",
             "/user-service/refresh",
+            "/user-service/logout", // AccessToken이 만료된 상태에서도 로그아웃 가능해야 함 (세션 식별은 쿠키의 sessionId로)
             "/user-service/signup",
             "/user-service/signup/email/check"
     );

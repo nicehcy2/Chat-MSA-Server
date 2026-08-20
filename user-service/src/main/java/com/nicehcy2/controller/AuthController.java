@@ -61,6 +61,23 @@ public class AuthController {
                 .build());
     }
 
+    @PostMapping("logout")
+    public ResponseEntity<Void> logout(
+            @CookieValue(value = "sessionId", required = false) String sessionId,
+            HttpServletResponse response
+    ) {
+
+        // 세션(토큰 family) 폐기. 쿠키가 없어도(이미 로그아웃 상태) 성공으로 처리한다.
+        if (sessionId != null) {
+            authService.logout(sessionId);
+        }
+
+        // 클라이언트의 refreshToken, sessionId 쿠키 즉시 만료
+        cookieUtil.expireAuthCookies(response);
+
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("signup")
     public ResponseEntity<Long> signup(@Valid @RequestBody SignupRequestDto signupRequestDto) {
 

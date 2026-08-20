@@ -24,6 +24,14 @@ public class CookieUtil {
         ));
     }
 
+    /**
+     * 로그아웃 시 인증 쿠키를 즉시 만료시킨다. (maxAge 0 = 브라우저가 삭제)
+     */
+    public void expireAuthCookies(HttpServletResponse response) {
+        response.addCookie(createHttpOnlyCookie("refreshToken", "", Duration.ZERO));
+        response.addCookie(createHttpOnlyCookie("sessionId", "", Duration.ZERO));
+    }
+
     private Cookie createHttpOnlyCookie(String name, String value, Duration maxAge) {
 
         Cookie cookie = new Cookie(name, value);
