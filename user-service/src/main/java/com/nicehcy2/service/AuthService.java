@@ -128,11 +128,6 @@ public class AuthService {
             throw new RedisHandler(ResponseCode.SESSION_REUSE_DETECTED);
         }
 
-        // 5. 회전(새로운 RT 발급)
-        final String jti = jwtUtil.generateJTI();
-        final String newRefreshToken = jwtUtil.generateRefreshToken(); // 새로운 refreshToken 발급
-        final String newRtHash = jwtUtil.generateSHA256Token(newRefreshToken); // 새로운 rtHash 발급
-
         // AccessToken 생성용 User 정보 초기화
         final CustomUserInfoDto customUserInfoDto = CustomUserInfoDto.builder()
                 .userId(sessionDto.customUserInfoDto().userId())
@@ -141,14 +136,34 @@ public class AuthService {
                 .sessionId(sessionId)
                 .build();
 
+        // 5. prev-RT(overlap) 요청: 회전하지 않는다.
+        // 이 요청은 동시 refresh에서 늦게 도착한 쪽이다. 여기서 회전해버리면
+        // 먼저 도착한 요청이 방금 발급받은 current RT가 무효화되고,
+        // 그 RT로 다음 refresh를 하는 순간 재사용 공격으로 오판되어 강제 로그아웃된다.
+        // 그래서 새 AccessToken만 발급하고, 세션과 쿠키는 건드리지 않는다.
+        if (isPrevRt) {
+
+            final String jtiForPrev = jwtUtil.generateJTI();
+            return LoginResponseDto.builder()
+                    .refreshToken(null) // 회전 없음 → 컨트롤러가 쿠키를 재설정하지 않는다
+                    .sessionId(sessionId)
+                    .accessToken(jwtUtil.createAccessToken(customUserInfoDto, jtiForPrev))
+                    .userId(sessionDto.customUserInfoDto().userId())
+                    .build();
+        }
+
+        // 6. 정상 회전(새로운 RT 발급) — 여기 도달하면 isCurrentRt == true
+        final String jti = jwtUtil.generateJTI();
+        final String newRefreshToken = jwtUtil.generateRefreshToken(); // 새로운 refreshToken 발급
+        final String newRtHash = jwtUtil.generateSHA256Token(newRefreshToken); // 새로운 rtHash 발급
+
         // Redis에 저장할 세션, RefreshToken 정보
         final RedisSessionDto newRedisSessionDto = RedisSessionDto.builder()
                 .customUserInfoDto(customUserInfoDto)
                 .rtHash(newRtHash)
                 .currentAccessJti(jti)
-                // 이전 RT 기록: overlap 요청이었으면 prevRtHash 유지, 정상 rotate면 현재 걸 prev로
-                .prevRtHash(isCurrentRt ? sessionDto.rtHash() : sessionDto.prevRtHash())
-                .rotatedAtEpoch(isCurrentRt ? now : sessionDto.rotatedAtEpoch()) // prevRt면 갱신 안 함
+                .prevRtHash(sessionDto.rtHash()) // 방금까지의 current를 prev로 (overlap 허용 대상)
+                .rotatedAtEpoch(now)
                 .expiresAtEpoch(sessionDto.expiresAtEpoch()) // 절대 만료는 회전해도 그대로 유지
                 .build();
 

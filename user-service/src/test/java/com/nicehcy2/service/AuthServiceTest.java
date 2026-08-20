@@ -29,7 +29,9 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -169,6 +171,68 @@ class AuthServiceTest {
 
         // 만료된 세션은 Redis에서 삭제되어야 한다
         verify(redisTemplate).delete("rt:session:SESSION_ID");
+    }
+
+    @Test
+    void refresh_성공_현재RT는_회전() {
+
+        // given: current RT로 정상 refresh
+        RedisSessionDto session = RedisSessionDto.builder()
+                .customUserInfoDto(CustomUserInfoDto.builder().userId(1L).build())
+                .rtHash("CURRENT_HASH")
+                .expiresAtEpoch(Instant.now().getEpochSecond() + 3600)
+                .build();
+
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get(anyString())).thenReturn(session);
+        when(jwtUtil.generateSHA256Token("CURRENT_RT")).thenReturn("CURRENT_HASH");
+        when(jwtUtil.generateJTI()).thenReturn("JTI");
+        when(jwtUtil.generateRefreshToken()).thenReturn("NEW_RT");
+        when(jwtUtil.generateSHA256Token("NEW_RT")).thenReturn("NEW_HASH");
+        when(jwtUtil.createAccessToken(any(CustomUserInfoDto.class), anyString()))
+                .thenReturn("NEW_AT");
+
+        // === when ===
+        LoginResponseDto result = authService.refresh("CURRENT_RT", "SESSION_ID");
+
+        // === then ===
+        assertEquals("NEW_RT", result.refreshToken()); // 회전됨 → 새 RT 반환 (쿠키 재설정 대상)
+        assertEquals("NEW_AT", result.accessToken());
+
+        // 회전된 세션이 Redis에 저장되어야 한다
+        verify(valueOperations).set(eq("rt:session:SESSION_ID"), any(RedisSessionDto.class), any(Duration.class));
+    }
+
+    @Test
+    void refresh_overlap_이전RT는_회전하지_않음() {
+
+        // given: 방금 회전된 세션에 이전 RT(prev)로 refresh가 도착 (동시 refresh 시나리오)
+        long now = Instant.now().getEpochSecond();
+        RedisSessionDto session = RedisSessionDto.builder()
+                .customUserInfoDto(CustomUserInfoDto.builder().userId(1L).build())
+                .rtHash("CURRENT_HASH")
+                .prevRtHash("PREV_HASH")
+                .rotatedAtEpoch(now - 5) // 5초 전 회전 → overlap window(30초) 안
+                .expiresAtEpoch(now + 3600)
+                .build();
+
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get(anyString())).thenReturn(session);
+        when(jwtUtil.generateSHA256Token("PREV_RT")).thenReturn("PREV_HASH");
+        when(jwtUtil.getOVERLAP_WINDOW()).thenReturn(Duration.ofSeconds(30));
+        when(jwtUtil.generateJTI()).thenReturn("JTI");
+        when(jwtUtil.createAccessToken(any(CustomUserInfoDto.class), anyString()))
+                .thenReturn("NEW_AT");
+
+        // === when ===
+        LoginResponseDto result = authService.refresh("PREV_RT", "SESSION_ID");
+
+        // === then ===
+        assertNull(result.refreshToken()); // 회전 없음 → 컨트롤러가 쿠키를 건드리지 않는다
+        assertEquals("NEW_AT", result.accessToken()); // AT만 새로 발급
+
+        // 세션은 변경되지 않아야 한다 (current RT 고아화 방지)
+        verify(valueOperations, never()).set(anyString(), any(RedisSessionDto.class), any(Duration.class));
     }
 
     @Test

@@ -50,9 +50,15 @@ public class AuthController {
     ) {
 
         LoginResponseDto responseDto = authService.refresh(refreshToken, sessionId);
-        cookieUtil.addAuthCookies(response,
-                responseDto.refreshToken(),
-                responseDto.sessionId());
+
+        // 회전이 일어난 경우에만 쿠키를 재설정한다.
+        // prev-RT(overlap) 요청은 회전하지 않으므로(refreshToken == null)
+        // 브라우저에 이미 저장된 current RT 쿠키를 그대로 유지해야 한다.
+        if (responseDto.refreshToken() != null) {
+            cookieUtil.addAuthCookies(response,
+                    responseDto.refreshToken(),
+                    responseDto.sessionId());
+        }
 
         return ResponseEntity.ok(RefreshResponseDto.builder()
                         .accessToken(responseDto.accessToken())
