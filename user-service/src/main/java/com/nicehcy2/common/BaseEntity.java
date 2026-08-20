@@ -1,5 +1,6 @@
 package com.nicehcy2.common;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 public abstract class BaseEntity {
 
     @CreatedDate
+    @Column(updatable = false) // 생성 시각은 이후 UPDATE에서 덮어쓰이지 않도록
     private LocalDateTime createdAt;
 
     @LastModifiedDate

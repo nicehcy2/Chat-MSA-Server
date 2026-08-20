@@ -1,5 +1,6 @@
 package com.nicehcy2.entity;
 
+import com.nicehcy2.common.BaseEntity;
 import com.nicehcy2.dto.SignupRequestDto;
 import com.nicehcy2.entity.enums.AgeGroup;
 import com.nicehcy2.entity.enums.JobGroup;
@@ -18,7 +19,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")
-public class User {
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,7 +50,8 @@ public class User {
     @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password", length = 200, nullable = false)
+    // BCrypt 해시는 항상 60자 고정
+    @Column(name = "password", length = 60, nullable = false)
     private String password;
 
     @Column(name = "reward", nullable = false)
