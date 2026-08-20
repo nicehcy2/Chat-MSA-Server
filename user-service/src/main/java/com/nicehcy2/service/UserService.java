@@ -8,9 +8,9 @@ import com.nicehcy2.entity.enums.AgeGroup;
 import com.nicehcy2.entity.enums.JobGroup;
 import com.nicehcy2.entity.User;
 import com.nicehcy2.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +18,7 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
     public MyPageUserInfoResponseDto getUserInfo(Long userId) {
 
         User user = userRepository.findById(userId)
