@@ -3,6 +3,7 @@ ONLINE_KEY_PREFIX: 'socket:online:'
 IDEMPOTENCY_TTL_DAYS: 1
 PUSH_GROUP_ID: 'push-notification-group'
 CHAT_TOPIC: 'chat-topic'
+CHAT_READ_TOPIC: 'chat-read-topic' # 읽음 이벤트 전용 토픽 (메시지 토픽과 분리)
 
 spring:
   datasource:

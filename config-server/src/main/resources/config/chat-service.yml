@@ -2,6 +2,7 @@ CHAT_NODE_ID: ${CHAT_NODE_ID} # 컨테이너/vm마다 고유값 주입
 ONLINE_KEY_PREFIX: 'socket:online:'
 PUSH_GROUP_ID: 'push-notification-group'
 CHAT_TOPIC: 'chat-topic'
+CHAT_READ_TOPIC: 'chat-read-topic' # 읽음 이벤트 전용 토픽 (메시지 토픽과 분리)
 
 spring:
   datasource:
