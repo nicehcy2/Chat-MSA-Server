@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class FcmController {
 
+    // TODO(배포 전 필수): 저장은 body의 userId 대신 X-User-Id 헤더 사용,
+    //  삭제는 토큰 소유자와 헤더의 userId가 일치하는지 검증(불일치 시 403)할 것.
+    //  지금은 아무나 남의 FCM 토큰을 등록/삭제할 수 있다.
+
     private final FcmService fcmService;
 
     /**

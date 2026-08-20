@@ -56,6 +56,9 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
         String email = String.valueOf(claims.get("email"));
 
         // 다운스트림 서비스로 전달할 헤더 추가
+        // TODO(배포 전 필수): h.add() → h.set()으로 교체할 것.
+        //  add는 클라이언트가 미리 보낸 X-User-Id 뒤에 덧붙이기만 해서,
+        //  다운스트림의 getFirst()가 클라이언트 위조값을 읽는다. set은 통째로 교체.
         ServerWebExchange mutated = exchange.mutate()
                 .request(r -> r
                         .headers(h -> {

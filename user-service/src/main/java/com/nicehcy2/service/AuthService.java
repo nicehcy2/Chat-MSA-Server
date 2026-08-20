@@ -83,6 +83,10 @@ public class AuthService {
                 .build();
     }
 
+    // TODO: 세션 단위 Redis 분산 잠금 추가 (SET NX PX + 토큰 비교 해제)
+    //  아래 조회→검증→저장이 비원자적이라, ms 단위로 동시에 도착한 current-RT refresh 2건이
+    //  둘 다 회전 경로로 들어가 서로를 고아로 만들 수 있다. (최악: 재사용 오판 → 재로그인 1회)
+    //  prev-RT 무회전 처리로 30초 overlap 구간은 이미 방어됨 → 저확률 케이스라 후순위.
     public LoginResponseDto refresh(String refreshToken, String sessionId) {
 
         // 클라이언트가 쿠키로 보낸 refreshToken을 hash로 변환.
