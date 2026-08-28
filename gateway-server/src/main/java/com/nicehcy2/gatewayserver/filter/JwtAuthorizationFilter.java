@@ -62,8 +62,8 @@ public class JwtAuthorizationFilter implements GlobalFilter, Ordered {
         ServerWebExchange mutated = exchange.mutate()
                 .request(r -> r
                         .headers(h -> {
-                            h.add("X-User-Id", userId);
-                            h.add("X-User-Email", email);
+                            h.set("X-User-Id", userId);
+                            h.set("X-User-Email", email);
                         })).build();
 
         return chain.filter(mutated);
