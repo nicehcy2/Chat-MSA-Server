@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @SpringBootApplication
 @EnableFeignClients
+@EnableJpaAuditing
 public class ChatApiServiceApplication {
 
 	public static void main(String[] args) {
