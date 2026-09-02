@@ -1,5 +1,6 @@
 package com.nicehcy2.chatapiservice.repository;
 
+import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
 import com.nicehcy2.chatapiservice.entity.ChatRoom;
 import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,4 +12,15 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
 
     @Query("SELECT cm.chatRoom FROM ChatRoomMembership cm WHERE cm.userId = :userId")
     List<ChatRoom> findChatRoomByUserId(Long userId);
+
+    // 필터 조건은 chat-service의 워터마크 UPDATE 가드(leftAt IS NULL AND isBanned = false)와 동일하게 유지한다.
+    @Query("""
+            SELECT new com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto(
+                u.userId, u.nickname, u.imageUrl, cm.isHost, cm.lastReadMessageId)
+            FROM ChatRoomMembership cm
+            JOIN User u ON cm.userId = u.userId
+            WHERE cm.chatRoom.id = :chatRoomId
+              AND cm.leftAt IS NULL AND cm.isBanned = false
+            """)
+    List<ChatRoomParticipantDto> findParticipantsByChatRoomId(Long chatRoomId);
 }

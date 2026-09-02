@@ -1,15 +1,16 @@
 package com.nicehcy2.chatapiservice.service;
 
 import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
-import com.nicehcy2.chatapiservice.dto.ChatServerInfoResponse;
+import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
 import com.nicehcy2.chatapiservice.dto.MessageDto;
 import com.nicehcy2.chatapiservice.entity.ChatRoom;
 import com.nicehcy2.chatapiservice.entity.User;
 import com.nicehcy2.chatapiservice.repository.ChatRoomMembershipRepository;
 import com.nicehcy2.chatapiservice.repository.MessageRepository;
 import com.nicehcy2.chatapiservice.repository.UserRepository;
+import com.nicehcy2.chatapiservice.common.error.GeneralException;
+import com.nicehcy2.chatapiservice.common.error.ResponseCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.stereotype.Service;
 
@@ -24,12 +25,6 @@ public class ChatApiService {
     private final UserRepository userRepository;
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
 
-    public ChatServerInfoResponse assignChatServer() {
-
-        // 적절한 채팅 서버 가져오기
-        return getServerInstance();
-    }
-
     /**
      * 구독한 채팅방 전체 조회
      * @param userId
@@ -38,7 +33,7 @@ public class ChatApiService {
     public List<ChatRoomInfoResponseDto> getChatRoomDetails(Long userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("사용자가 없습니다"));
+                .orElseThrow(() -> new GeneralException(ResponseCode.USER_NOT_FOUND));
 
         List<ChatRoom> chatRooms = chatRoomMembershipRepository.findChatRoomByUserId(user.getUserId());
 
@@ -58,25 +53,30 @@ public class ChatApiService {
                 }).toList();
     }
 
-    private ChatServerInfoResponse getServerInstance() {
-
-        List<ServiceInstance> instances = discoveryClient.getInstances("chat-service");
-
-        if (instances.size() == 0) {
-            return null;
-        }
-        // TODO: get(0) 로직 말고 서버를 선택하는 조건을 추가해줘야 한다.
-        String nodeId = instances.get(0).getInstanceId();
-        String serviceUri = String.valueOf(instances.get(0).getUri());
-
-        return ChatServerInfoResponse.builder()
-                .nodeId(nodeId)
-                .websocketUrl(serviceUri)
-                .build();
-    }
-
     public List<MessageDto> getChatMessages(Long chatRoomId) {
 
         return messageRepository.findCustomByChatRoomId(chatRoomId);
+    }
+
+    /**
+     * 방 참여자 + 읽음 워터마크 스냅샷.
+     * 클라이언트는 방 입장 시 이 스냅샷으로 참여자 Map을 만들고,
+     * 이후에는 /sub/chatroom{id}.read 델타를 max-병합하여 unread를 계산한다.
+     *
+     * 요청자가 해당 방의 활성 멤버가 아니면 403. 별도 exists 쿼리 대신
+     * 어차피 조회하는 참여자 목록에 요청자가 포함되는지로 검증한다(쿼리 1회).
+     */
+    public List<ChatRoomParticipantDto> getChatRoomParticipants(Long chatRoomId, Long requesterId) {
+
+        List<ChatRoomParticipantDto> participants =
+                chatRoomMembershipRepository.findParticipantsByChatRoomId(chatRoomId);
+
+        boolean isMember = participants.stream()
+                .anyMatch(participant -> participant.userId().equals(requesterId));
+        if (!isMember) {
+            throw new GeneralException(ResponseCode.CHATROOM_ACCESS_DENIED);
+        }
+
+        return participants;
     }
 }
