@@ -3,8 +3,11 @@ package com.nicehcy2.common.error;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * 전역 예외 처리 클래스
@@ -24,9 +27,17 @@ public class GlobalExceptionHandler {
 
     // IllegalArgumentException: 잘못된 인자가 전달됐을 때 (예: 잘못된 enum 값)
     // IllegalStateException: 객체 상태가 올바르지 않을 때
+    // ServletRequestBindingException: 필수 헤더/파라미터/쿠키 누락
+    // MethodArgumentTypeMismatchException: 경로/파라미터 타입 불일치 (예: userId에 문자열)
+    // MethodArgumentNotValidException: @Valid 바인딩 실패 (예: 이메일 형식 오류)
+    // → 뒤의 셋은 원래 스프링이 기본으로 400 처리하지만, 아래 Exception.class 핸들러가
+    //   먼저 가로채 500으로 만들어버리므로 여기서 명시적으로 400에 매핑한다.
     @ExceptionHandler({
             IllegalArgumentException.class,
-            IllegalStateException.class
+            IllegalStateException.class,
+            ServletRequestBindingException.class,
+            MethodArgumentTypeMismatchException.class,
+            MethodArgumentNotValidException.class
     })
     public ResponseEntity<ErrorResponse> handleBadRequestException(Exception e) {
 
