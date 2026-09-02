@@ -4,6 +4,7 @@ import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
 import com.nicehcy2.chatapiservice.dto.MessageDto;
 import com.nicehcy2.chatapiservice.entity.ChatRoom;
+import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
 import com.nicehcy2.chatapiservice.entity.User;
 import com.nicehcy2.chatapiservice.repository.ChatRoomMembershipRepository;
 import com.nicehcy2.chatapiservice.repository.MessageRepository;
@@ -11,14 +12,20 @@ import com.nicehcy2.chatapiservice.repository.UserRepository;
 import com.nicehcy2.chatapiservice.common.error.GeneralException;
 import com.nicehcy2.chatapiservice.common.error.ResponseCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ChatApiService {
+
+    @Value("${CHAT_MESSAGE_PAGE_MAX_SIZE:100}") private int maxMessagePageSize;
 
     private final DiscoveryClient discoveryClient;
     private final MessageRepository messageRepository;
@@ -56,6 +63,22 @@ public class ChatApiService {
     public List<MessageDto> getChatMessages(Long chatRoomId) {
 
         return messageRepository.findCustomByChatRoomId(chatRoomId);
+    }
+
+    public List<MessageDto> getChatMessagesBefore(Long chatRoomId, Long requesterId, Long before, int limit) {
+
+        if (limit < 1 || limit > maxMessagePageSize) {
+            throw new IllegalArgumentException("limit은 1~" + maxMessagePageSize + " 범위여야 합니다.");
+        }
+
+        ChatRoomMembership membership = chatRoomMembershipRepository
+                .findByChatRoomIdAndUserIdAndLeftAtIsNullAndIsBannedFalse(chatRoomId, requesterId)
+                .orElseThrow(() -> new GeneralException(ResponseCode.CHATROOM_ACCESS_DENIED));
+
+        List<MessageDto> messages = new ArrayList<>(messageRepository.findMessagesBefore(
+                chatRoomId, before, membership.getJoinMessageId(), PageRequest.of(0, limit)));
+        Collections.reverse(messages);
+        return messages;
     }
 
     /**

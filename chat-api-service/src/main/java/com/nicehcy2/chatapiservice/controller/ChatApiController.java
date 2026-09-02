@@ -17,12 +17,20 @@ public class ChatApiController {
 
     private final ChatApiService chatApiService;
 
-    // 동기화 로직 적용 전 임시 메시지 조회 코드
-    // TODO(보안): 멤버십 검증이 없어 임의 방의 메시지를 조회할 수 있다. 정식 동기화 API로 교체 시 함께 해결할 것.
-    @GetMapping("/{chatRoomId}/messages/test")
-    public ResponseEntity<List<MessageDto>> getChatMessages(@PathVariable Long chatRoomId) {
+    /**
+     * 커서 기반 메시지 동기화.
+     * before(선택): 이 messageTSID 이전(exclusive) 메시지만. 생략 시 최신부터.
+     * limit(기본 30, 최대 100): 페이지 크기.
+     * 응답은 시간순(ASC). 다음 페이지 커서 = 첫 요소의 messageTSID, 끝 판정 = size < limit.
+     */
+    @GetMapping("/{chatRoomId}/messages")
+    public ResponseEntity<List<MessageDto>> getChatMessages(
+            @PathVariable Long chatRoomId,
+            @RequestParam(required = false) Long before,
+            @RequestParam(defaultValue = "30") int limit,
+            @RequestHeader("X-User-Id") Long requesterId) {
 
-        return ResponseEntity.ok(chatApiService.getChatMessages(chatRoomId));
+        return ResponseEntity.ok(chatApiService.getChatMessagesBefore(chatRoomId, requesterId, before, limit));
     }
 
     // TODO(보안): userId를 쿼리 파라미터가 아니라 게이트웨이가 주입하는 X-User-Id 헤더로 전환할 것. 지금은 아무 userId나 넣어 남의 방 목록을 볼 수 있다.
