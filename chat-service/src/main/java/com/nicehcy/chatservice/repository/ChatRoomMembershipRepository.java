@@ -15,6 +15,8 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
     Optional<ChatRoomMembership> findByUserIdAndChatRoom(Long userId, ChatRoom chatRoom);
     List<ChatRoomMembership> findByChatRoomId(Long chatRoomId);
 
+    boolean existsByChatRoomIdAndUserIdAndLeftAtIsNullAndIsBannedFalse(Long chatRoomId, Long userId);
+
     @Transactional
     @Modifying
     @Query("""

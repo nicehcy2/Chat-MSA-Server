@@ -29,6 +29,12 @@ public class ChatService {
 
         log.info("[1/5] 메시지 전송 프로세스 시작");
 
+        if (!chatRoomMembershipRepository.existsByChatRoomIdAndUserIdAndLeftAtIsNullAndIsBannedFalse(
+                messageSendRequest.chatRoomId(), senderId)) {
+            log.warn("비멤버 메시지 전송 거부 [senderId: {}, chatRoomId: {}]", senderId, messageSendRequest.chatRoomId());
+            throw new IllegalArgumentException("채팅방 멤버가 아닙니다.");
+        }
+
         // 요청 DTO를 TSID/타임스탬프가 채워진 응답 DTO로 변환
         final MessageResponseDto messageDtoWithId = withGeneratedMessageId(messageSendRequest, senderId);
         log.info("[2/5] TSID 기반 메시지 ID 생성 완료: {}", messageDtoWithId.messageTSID());
