@@ -33,9 +33,8 @@ public class ChatApiController {
         return ResponseEntity.ok(chatApiService.getChatMessagesBefore(chatRoomId, requesterId, before, limit));
     }
 
-    // TODO(보안): userId를 쿼리 파라미터가 아니라 게이트웨이가 주입하는 X-User-Id 헤더로 전환할 것. 지금은 아무 userId나 넣어 남의 방 목록을 볼 수 있다.
     @GetMapping
-    public ResponseEntity<List<ChatRoomInfoResponseDto>> getChatRoomList(@RequestParam Long userId) {
+    public ResponseEntity<List<ChatRoomInfoResponseDto>> getChatRoomList(@RequestHeader("X-User-Id") Long userId) {
 
         return ResponseEntity.ok(chatApiService.getChatRoomDetails(userId));
     }

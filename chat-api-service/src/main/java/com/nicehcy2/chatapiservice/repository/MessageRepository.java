@@ -1,5 +1,6 @@
 package com.nicehcy2.chatapiservice.repository;
 
+import com.nicehcy2.chatapiservice.dto.ChatRoomLastMessageDto;
 import com.nicehcy2.chatapiservice.dto.MessageDto;
 import com.nicehcy2.chatapiservice.entity.Message;
 import org.springframework.data.domain.Pageable;
@@ -55,4 +56,16 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
         order by m.id desc
     """)
     List<MessageDto> findMessagesBefore(Long chatRoomId, Long before, Long floor, Pageable pageable);
+
+    @Query("""
+        select new com.nicehcy2.chatapiservice.dto.ChatRoomLastMessageDto(
+            m.chatRoomId, m.id, m.messageType, m.content, m.timestamp)
+        from Message m
+        where m.id in (
+            select max(m2.id) from Message m2
+            where m2.chatRoomId in :chatRoomIds
+            group by m2.chatRoomId
+        )
+    """)
+    List<ChatRoomLastMessageDto> findLastMessages(List<Long> chatRoomIds);
 }

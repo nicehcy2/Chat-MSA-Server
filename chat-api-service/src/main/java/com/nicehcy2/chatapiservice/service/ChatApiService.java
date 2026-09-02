@@ -1,25 +1,28 @@
 package com.nicehcy2.chatapiservice.service;
 
 import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
+import com.nicehcy2.chatapiservice.dto.ChatRoomLastMessageDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
+import com.nicehcy2.chatapiservice.dto.ChatRoomUnreadCountDto;
 import com.nicehcy2.chatapiservice.dto.MessageDto;
 import com.nicehcy2.chatapiservice.entity.ChatRoom;
 import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
-import com.nicehcy2.chatapiservice.entity.User;
 import com.nicehcy2.chatapiservice.repository.ChatRoomMembershipRepository;
 import com.nicehcy2.chatapiservice.repository.MessageRepository;
-import com.nicehcy2.chatapiservice.repository.UserRepository;
 import com.nicehcy2.chatapiservice.common.error.GeneralException;
 import com.nicehcy2.chatapiservice.common.error.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,37 +30,68 @@ public class ChatApiService {
 
     @Value("${CHAT_MESSAGE_PAGE_MAX_SIZE:100}") private int maxMessagePageSize;
 
-    private final DiscoveryClient discoveryClient;
     private final MessageRepository messageRepository;
-    private final UserRepository userRepository;
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
 
     /**
-     * 구독한 채팅방 전체 조회
-     * @param userId
-     * @return
+     * 참여 중인 채팅방 목록. 방 수와 무관하게 쿼리 3개(멤버십+방, 방별 unread, 방별 마지막 메시지)로 조립한다.
      */
     public List<ChatRoomInfoResponseDto> getChatRoomDetails(Long userId) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(ResponseCode.USER_NOT_FOUND));
+        List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findActiveMembershipsWithChatRoom(userId);
+        if (memberships.isEmpty()) {
+            return List.of();
+        }
 
-        List<ChatRoom> chatRooms = chatRoomMembershipRepository.findChatRoomByUserId(user.getUserId());
+        Map<Long, Long> unreadCounts = chatRoomMembershipRepository.countUnreadByUserId(userId).stream()
+                .collect(Collectors.toMap(ChatRoomUnreadCountDto::chatRoomId, ChatRoomUnreadCountDto::count));
 
-        return chatRooms.stream()
-                .map(chatRoom -> {
-                    return ChatRoomInfoResponseDto.builder()
-                            .chatRoomId(chatRoom.getId())
-                            .chatRoomTitle(chatRoom.getTitle())
-                            .chatRoomMaxUserCount(chatRoom.getMaxParticipants())
-                            .chatRoomRule(chatRoom.getDescription())
-                            .chatRoomThumbnail(chatRoom.getImageUrl())
-                            .participationCount(chatRoom.getParticipationCount())
-                            .lastChatMessage("LAST")
-                            .unreadChatCount(13)
-                            .updatedAt(chatRoom.getUpdatedAt())
-                            .build();
-                }).toList();
+        List<Long> chatRoomIds = memberships.stream().map(cm -> cm.getChatRoom().getId()).toList();
+        Map<Long, ChatRoomLastMessageDto> lastMessages = messageRepository.findLastMessages(chatRoomIds).stream()
+                .collect(Collectors.toMap(ChatRoomLastMessageDto::chatRoomId, Function.identity()));
+
+        Comparator<ChatRoom> latestFirst = Comparator
+                .comparing((ChatRoom room) -> lastMessageId(lastMessages, room), Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(ChatRoom::getId, Comparator.reverseOrder());
+
+        return memberships.stream()
+                .map(ChatRoomMembership::getChatRoom)
+                .sorted(latestFirst)
+                .map(room -> toChatRoomInfo(room, unreadCounts.getOrDefault(room.getId(), 0L), lastMessages.get(room.getId())))
+                .toList();
+    }
+
+    private static Long lastMessageId(Map<Long, ChatRoomLastMessageDto> lastMessages, ChatRoom room) {
+
+        ChatRoomLastMessageDto lastMessage = lastMessages.get(room.getId());
+        return lastMessage == null ? null : lastMessage.messageId();
+    }
+
+    private static ChatRoomInfoResponseDto toChatRoomInfo(ChatRoom room, long unreadCount, ChatRoomLastMessageDto lastMessage) {
+
+        return ChatRoomInfoResponseDto.builder()
+                .chatRoomId(room.getId())
+                .chatRoomTitle(room.getTitle())
+                .chatRoomMaxUserCount(room.getMaxParticipants())
+                .chatRoomRule(room.getDescription())
+                .chatRoomThumbnail(room.getImageUrl())
+                .participationCount(room.getParticipationCount())
+                .lastChatMessage(toPreview(lastMessage))
+                .unreadChatCount((int) unreadCount)
+                .updatedAt(lastMessage == null ? room.getUpdatedAt() : lastMessage.timestamp())
+                .build();
+    }
+
+    private static String toPreview(ChatRoomLastMessageDto lastMessage) {
+
+        if (lastMessage == null) {
+            return null;
+        }
+        return switch (lastMessage.messageType()) {
+            case TEXT -> lastMessage.content();
+            case IMAGE -> "사진";
+            case RECEIPT -> "영수증";
+        };
     }
 
     public List<MessageDto> getChatMessages(Long chatRoomId) {
