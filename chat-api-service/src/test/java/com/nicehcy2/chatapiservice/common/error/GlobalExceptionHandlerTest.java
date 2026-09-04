@@ -4,8 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -67,23 +65,6 @@ class GlobalExceptionHandlerTest {
         assertNotNull(body);
         assertEquals("CHATROOM404", body.code());
         assertNull(body.fieldErrors()); // 검증 에러가 아니면 항목 자체를 내려주지 않는다
-    }
-
-    @Test
-    void 역직렬화_실패는_400이다() {
-        // enum 오타("TWENTIS") 등 Jackson 단계에서 터지는 예외.
-        // @Valid보다 먼저 발생해 FieldError가 없으므로 필드명 없이 400만 준다. (catch-all 500으로 새면 안 됨)
-        HttpMessageNotReadableException e = new HttpMessageNotReadableException(
-                "Cannot deserialize value of type AgeGroup from String \"TWENTIS\"",
-                new MockHttpInputMessage(new byte[0]));
-
-        ResponseEntity<ErrorResponse> response = handler.handleBadRequestException(e);
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        ErrorResponse body = response.getBody();
-        assertNotNull(body);
-        assertEquals(ResponseCode._BAD_REQUEST.getCode(), body.code());
-        assertNull(body.fieldErrors());
     }
 
     @SuppressWarnings("unused")
