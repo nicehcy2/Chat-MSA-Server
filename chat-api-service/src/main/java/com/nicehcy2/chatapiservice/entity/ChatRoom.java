@@ -3,9 +3,10 @@ package com.nicehcy2.chatapiservice.entity;
 import com.nicehcy2.chatapiservice.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -19,7 +20,6 @@ public class ChatRoom extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 채팅방 제목
     @Column(name = "title", nullable = false, length = 18)
     private String title;
 
@@ -29,17 +29,32 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "description", length = 200)
     private String description;
 
-    // 최대 참여인원 - 최대 100명
     @Column(name = "max_participants", nullable = false)
-    // @Max(100)
     private Integer maxParticipants;
 
-    // 참여 인원 수 - 최대 maxParticipants명
     @Column(name = "participation_count", nullable = false)
-    // @Min(0) // 음수가 될 수 없도록
     private Integer participationCount;
 
-    // 프로필 이미지
     @Column(name = "image_url")
     private String imageUrl;
+
+    @Column(name = "daily_limit", nullable = false)
+    private Integer dailyLimit;
+
+    // 빈 Set = 전체 대상. 목록 조회 시 방마다 컬렉션 쿼리가 나가지 않도록 BatchSize로 묶는다
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "chat_room_age_group", joinColumns = @JoinColumn(name = "chat_room_id"))
+    @Column(name = "age_group", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @BatchSize(size = 50)
+    @Builder.Default
+    private Set<AgeGroup> ageGroups = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "chat_room_job_group", joinColumns = @JoinColumn(name = "chat_room_id"))
+    @Column(name = "job_group", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @BatchSize(size = 50)
+    @Builder.Default
+    private Set<JobGroup> jobGroups = new HashSet<>();
 }

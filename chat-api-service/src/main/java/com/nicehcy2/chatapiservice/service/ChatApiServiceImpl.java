@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class ChatApiService {
+public class ChatApiServiceImpl implements ChatApiService {
 
     @Value("${CHAT_MESSAGE_PAGE_MAX_SIZE:100}") private int maxMessagePageSize;
 
@@ -36,6 +36,7 @@ public class ChatApiService {
     /**
      * 참여 중인 채팅방 목록. 방 수와 무관하게 쿼리 3개(멤버십+방, 방별 unread, 방별 마지막 메시지)로 조립한다.
      */
+    @Override
     public List<ChatRoomInfoResponseDto> getChatRoomDetails(Long userId) {
 
         List<ChatRoomMembership> memberships = chatRoomMembershipRepository.findActiveMembershipsWithChatRoom(userId);
@@ -94,11 +95,13 @@ public class ChatApiService {
         };
     }
 
+    @Override
     public List<MessageDto> getChatMessages(Long chatRoomId) {
 
         return messageRepository.findCustomByChatRoomId(chatRoomId);
     }
 
+    @Override
     public List<MessageDto> getChatMessagesBefore(Long chatRoomId, Long requesterId, Long before, int limit) {
 
         if (limit < 1 || limit > maxMessagePageSize) {
@@ -123,6 +126,7 @@ public class ChatApiService {
      * 요청자가 해당 방의 활성 멤버가 아니면 403. 별도 exists 쿼리 대신
      * 어차피 조회하는 참여자 목록에 요청자가 포함되는지로 검증한다(쿼리 1회).
      */
+    @Override
     public List<ChatRoomParticipantDto> getChatRoomParticipants(Long chatRoomId, Long requesterId) {
 
         List<ChatRoomParticipantDto> participants =

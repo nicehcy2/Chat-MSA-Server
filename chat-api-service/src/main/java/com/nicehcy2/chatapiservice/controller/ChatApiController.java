@@ -2,9 +2,13 @@ package com.nicehcy2.chatapiservice.controller;
 
 import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
+import com.nicehcy2.chatapiservice.dto.CreateChatRoomRequestDto;
 import com.nicehcy2.chatapiservice.dto.MessageDto;
 import com.nicehcy2.chatapiservice.service.ChatApiService;
+import com.nicehcy2.chatapiservice.service.ChatRoomService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +20,7 @@ import java.util.List;
 public class ChatApiController {
 
     private final ChatApiService chatApiService;
+    private final ChatRoomService chatRoomService;
 
     /**
      * 커서 기반 메시지 동기화.
@@ -51,15 +56,14 @@ public class ChatApiController {
         return ResponseEntity.ok(chatApiService.getChatRoomParticipants(chatRoomId, requesterId));
     }
 
-    /**
-     * 채팅방 만들기
-     * @return
-     */
-    /*
     @PostMapping
-    public ResponseEntity<> createChatRoom() {
+    public ResponseEntity<Long> createChatRoom(
+            @Valid @RequestBody CreateChatRoomRequestDto request,
+            @RequestHeader("X-User-Id") Long requesterId) {
 
-    }*/
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(chatRoomService.createChatRoom(requesterId, request));
+    }
 
     /**
      * 특정 채팅방 조회
