@@ -37,7 +37,7 @@ class ChatRoomServiceTest {
     @Mock ChatRoomMembershipRepository chatRoomMembershipRepository;
     @Mock UserRepository userRepository;
 
-    @InjectMocks ChatRoomService chatRoomService;
+    @InjectMocks ChatRoomServiceImpl chatRoomService;
 
     static final Long REQUESTER_ID = 7L;
     static final Long SAVED_ROOM_ID = 10L;
