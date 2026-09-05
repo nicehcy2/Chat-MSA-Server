@@ -20,12 +20,12 @@ public record ExploreRoomResponseDto(
         String imageUrl,
         Set<AgeGroup> ageGroups,
         Set<JobGroup> jobGroups,
-        Boolean isBanned,
+        MembershipStatus membershipStatus,
         LocalDateTime createdAt,
         ExploreRoomHostDto host
 ) {
 
-    public static ExploreRoomResponseDto from(ChatRoom room, ExploreRoomHostDto host, boolean isBanned) {
+    public static ExploreRoomResponseDto from(ChatRoom room, ExploreRoomHostDto host, MembershipStatus membershipStatus) {
         return ExploreRoomResponseDto.builder()
                 .chatRoomId(room.getId())
                 .title(room.getTitle())
@@ -37,7 +37,7 @@ public record ExploreRoomResponseDto(
                 .imageUrl(room.getImageUrl())
                 .ageGroups(room.getAgeGroups())
                 .jobGroups(room.getJobGroups())
-                .isBanned(isBanned)
+                .membershipStatus(membershipStatus)
                 .createdAt(room.getCreatedAt())
                 .host(host)
                 .build();

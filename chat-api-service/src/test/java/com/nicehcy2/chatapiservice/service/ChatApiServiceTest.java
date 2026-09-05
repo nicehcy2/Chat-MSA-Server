@@ -108,6 +108,17 @@ class ChatApiServiceTest {
                     .thenReturn(List.of(rooms));
         }
 
+        void stubNoMembership() {
+            when(chatRoomMembershipRepository.findByUserIdAndChatRoomIdIn(eq(REQUESTER_ID), anyCollection()))
+                    .thenReturn(List.of());
+        }
+
+        ChatRoomMembership membership(ChatRoom room, boolean banned, LocalDateTime leftAt) {
+            return ChatRoomMembership.builder()
+                    .chatRoom(room).userId(REQUESTER_ID).isHost(false).isBanned(banned).leftAt(leftAt)
+                    .build();
+        }
+
         // ----- 거부 -----
 
         @Test
@@ -211,7 +222,7 @@ class ChatApiServiceTest {
         // ----- 응답 조립 -----
 
         @Test
-        void 조건에_맞는_방이_없으면_빈_리스트이고_호스트_강퇴_조회는_하지_않는다() {
+        void 조건에_맞는_방이_없으면_빈_리스트이고_호스트_멤버십_조회는_하지_않는다() {
             stubUserExists();
             stubRooms();
 
@@ -220,7 +231,7 @@ class ChatApiServiceTest {
             assertNotNull(result);
             assertTrue(result.isEmpty());
             verify(chatRoomMembershipRepository, never()).findHostsByChatRoomIds(anyCollection());
-            verify(chatRoomMembershipRepository, never()).findBannedChatRoomIds(any());
+            verify(chatRoomMembershipRepository, never()).findByUserIdAndChatRoomIdIn(any(), anyCollection());
         }
 
         @Test
@@ -231,7 +242,7 @@ class ChatApiServiceTest {
             ReflectionTestUtils.setField(room, "createdAt", createdAt);
             stubRooms(room);
             when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection())).thenReturn(List.of(host(10L, 11L)));
-            when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of());
+            stubNoMembership();
 
             ExploreRoomResponseDto dto = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition).get(0);
 
@@ -254,7 +265,7 @@ class ChatApiServiceTest {
             stubRooms(room(10L, "1234"), room(11L, null));
             when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection()))
                     .thenReturn(List.of(host(10L, 1L), host(11L, 2L)));
-            when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of());
+            stubNoMembership();
 
             List<ExploreRoomResponseDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
 
@@ -263,17 +274,40 @@ class ChatApiServiceTest {
         }
 
         @Test
-        void 강퇴된_방은_isBanned가_true이고_나머지는_false다() {
+        void 요청자의_멤버십_상태를_방마다_enum으로_내려주고_행이_없으면_NONE이다() {
+            // 판정 기준은 상세 API와 같다. 카드가 상세를 부르지 않고도 "참여 중"을 표시할 수 있어야 한다
+            stubUserExists();
+            ChatRoom none = room(13L, null);
+            ChatRoom joined = room(12L, null);
+            ChatRoom left = room(11L, null);
+            ChatRoom banned = room(10L, null);
+            stubRooms(none, joined, left, banned);
+            when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection())).thenReturn(List.of());
+            when(chatRoomMembershipRepository.findByUserIdAndChatRoomIdIn(eq(REQUESTER_ID), anyCollection()))
+                    .thenReturn(List.of(
+                            membership(joined, false, null),
+                            membership(left, false, LocalDateTime.of(2026, 9, 4, 0, 0)),
+                            membership(banned, true, null)));
+
+            List<MembershipStatus> statuses = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition).stream()
+                    .map(ExploreRoomResponseDto::membershipStatus).toList();
+
+            assertEquals(List.of(MembershipStatus.NONE, MembershipStatus.JOINED, MembershipStatus.LEFT, MembershipStatus.BANNED), statuses);
+        }
+
+        @Test
+        void 멤버십_조회는_결과_방_id_목록으로_한_번만_한다() {
             stubUserExists();
             stubRooms(room(10L, null), room(11L, null));
-            when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection()))
-                    .thenReturn(List.of(host(10L, 1L), host(11L, 2L)));
-            when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of(11L));
+            when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection())).thenReturn(List.of());
+            stubNoMembership();
 
-            List<ExploreRoomResponseDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
+            chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
 
-            assertFalse(result.get(0).isBanned());
-            assertTrue(result.get(1).isBanned());
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Collection<Long>> captor = ArgumentCaptor.forClass(Collection.class);
+            verify(chatRoomMembershipRepository).findByUserIdAndChatRoomIdIn(eq(REQUESTER_ID), captor.capture());
+            assertEquals(Set.of(10L, 11L), Set.copyOf(captor.getValue()));
         }
 
         @Test
@@ -285,7 +319,7 @@ class ChatApiServiceTest {
             stubRooms(full, room(11L, null));
             when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection()))
                     .thenReturn(List.of(host(10L, 1L), host(11L, REQUESTER_ID)));
-            when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of());
+            stubNoMembership();
 
             List<ExploreRoomResponseDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
 
@@ -298,7 +332,7 @@ class ChatApiServiceTest {
             stubUserExists();
             stubRooms(room(10L, null));
             when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection())).thenReturn(List.of());
-            when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of());
+            stubNoMembership();
 
             List<ExploreRoomResponseDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
 
@@ -311,7 +345,7 @@ class ChatApiServiceTest {
             stubUserExists();
             stubRooms(room(30L, null), room(20L, null), room(10L, null));
             when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection())).thenReturn(List.of());
-            when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of());
+            stubNoMembership();
 
             List<Long> ids = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition).stream()
                     .map(ExploreRoomResponseDto::chatRoomId).toList();
@@ -324,7 +358,7 @@ class ChatApiServiceTest {
             stubUserExists();
             stubRooms(room(10L, null), room(11L, null));
             when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection())).thenReturn(List.of());
-            when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of());
+            stubNoMembership();
 
             chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
 

@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -177,11 +176,12 @@ public class ChatApiServiceImpl implements ChatApiService {
         List<Long> chatRoomIds = rooms.stream().map(ChatRoom::getId).toList();
         Map<Long, ChatRoomHostDto> hosts = chatRoomMembershipRepository.findHostsByChatRoomIds(chatRoomIds).stream()
                 .collect(Collectors.toMap(ChatRoomHostDto::chatRoomId, Function.identity()));
-        Set<Long> bannedIds = Set.copyOf(chatRoomMembershipRepository.findBannedChatRoomIds(requesterId));
+        Map<Long, MembershipStatus> statuses = chatRoomMembershipRepository.findByUserIdAndChatRoomIdIn(requesterId, chatRoomIds).stream()
+                .collect(Collectors.toMap(m -> m.getChatRoom().getId(), MembershipStatus::from));
 
         return rooms.stream()
                 .map(room -> ExploreRoomResponseDto.from(
-                        room, toHostDto(hosts.get(room.getId())), bannedIds.contains(room.getId())))
+                        room, toHostDto(hosts.get(room.getId())), statuses.getOrDefault(room.getId(), MembershipStatus.NONE)))
                 .toList();
     }
 

@@ -61,7 +61,6 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
             """)
     List<ChatRoomHostDto> findHostsByChatRoomIds(Collection<Long> chatRoomIds);
 
-    // 강퇴는 leftAt과 무관하게 재입장 제한이다
-    @Query("SELECT cm.chatRoom.id FROM ChatRoomMembership cm WHERE cm.userId = :userId AND cm.isBanned = true")
-    List<Long> findBannedChatRoomIds(Long userId);
+    // 요청자의 멤버십을 결과 방 범위로 한 번에. 상태(leftAt/isBanned)와 무관하게 행을 돌려준다
+    List<ChatRoomMembership> findByUserIdAndChatRoomIdIn(Long userId, Collection<Long> chatRoomIds);
 }

@@ -4,6 +4,7 @@ import com.nicehcy2.chatapiservice.config.JwtAuthConverter;
 import com.nicehcy2.chatapiservice.dto.ExploreChatRoomRequestDto;
 import com.nicehcy2.chatapiservice.dto.ExploreRoomResponseDto;
 import com.nicehcy2.chatapiservice.dto.ExploreRoomHostDto;
+import com.nicehcy2.chatapiservice.dto.MembershipStatus;
 import com.nicehcy2.chatapiservice.entity.AgeGroup;
 import com.nicehcy2.chatapiservice.entity.JobGroup;
 import com.nicehcy2.chatapiservice.service.ChatApiService;
@@ -52,7 +53,7 @@ class ChatApiControllerExploreTest {
     static final ExploreRoomResponseDto SAMPLE = new ExploreRoomResponseDto(
             10L, "무지출 챌린지", "하루 만원", 3, 10, 10_000,
             true, null, Set.of(AgeGroup.TWENTIES), Set.of(),
-            false, LocalDateTime.of(2026, 9, 1, 12, 0),
+            MembershipStatus.NONE, LocalDateTime.of(2026, 9, 1, 12, 0),
             new ExploreRoomHostDto(11L, "티끌모아태산", null, AgeGroup.THIRTIES, JobGroup.EMPLOYEE));
 
     @Test
@@ -64,7 +65,7 @@ class ChatApiControllerExploreTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].chatRoomId").value(10))
                 .andExpect(jsonPath("$[0].isPrivate").value(true))
-                .andExpect(jsonPath("$[0].isBanned").value(false))
+                .andExpect(jsonPath("$[0].membershipStatus").value("NONE"))
                 .andExpect(jsonPath("$[0].ageGroups[0]").value("TWENTIES"))
                 .andExpect(jsonPath("$[0].host.nickname").value("티끌모아태산"))
                 .andExpect(jsonPath("$[0].password").doesNotExist());

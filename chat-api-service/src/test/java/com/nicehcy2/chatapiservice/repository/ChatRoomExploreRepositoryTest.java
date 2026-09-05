@@ -19,6 +19,7 @@ import org.springframework.test.context.TestPropertySource;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -310,30 +311,33 @@ class ChatRoomExploreRepositoryTest {
     }
 
     @Nested
-    class findBannedChatRoomIds {
+    class findByUserIdAndChatRoomIdIn {
 
         @Test
-        void 강퇴된_방_id만_돌려주고_leftAt_유무는_보지_않는다() {
-            ChatRoom bannedActive = room("banned-active");
-            ChatRoom bannedLeft = room("banned-left");
+        void 요청자의_멤버십을_상태와_무관하게_돌려준다() {
             ChatRoom joined = room("joined");
             ChatRoom left = room("left");
-            membership(bannedActive, 7L, false, true, null);
-            membership(bannedLeft, 7L, false, true, LocalDateTime.now());
+            ChatRoom banned = room("banned");
+            ChatRoom none = room("none");
             membership(joined, 7L, false, false, null);
             membership(left, 7L, false, false, LocalDateTime.now());
+            membership(banned, 7L, false, true, LocalDateTime.now());
 
-            List<Long> result = membershipRepository.findBannedChatRoomIds(7L);
+            List<ChatRoomMembership> result = membershipRepository.findByUserIdAndChatRoomIdIn(
+                    7L, List.of(joined.getId(), left.getId(), banned.getId(), none.getId()));
 
-            assertEquals(Set.of(bannedActive.getId(), bannedLeft.getId()), Set.copyOf(result));
+            assertEquals(Set.of(joined.getId(), left.getId(), banned.getId()),
+                    result.stream().map(m -> m.getChatRoom().getId()).collect(Collectors.toSet()));
         }
 
         @Test
-        void 다른_유저의_강퇴는_영향을_주지_않는다() {
-            ChatRoom room = room("r");
-            membership(room, 8L, false, true, null);
+        void 범위_밖의_방과_다른_유저의_멤버십은_돌려주지_않는다() {
+            ChatRoom inRange = room("in");
+            ChatRoom outOfRange = room("out");
+            membership(inRange, 8L, false, false, null);
+            membership(outOfRange, 7L, false, false, null);
 
-            List<Long> result = membershipRepository.findBannedChatRoomIds(7L);
+            List<ChatRoomMembership> result = membershipRepository.findByUserIdAndChatRoomIdIn(7L, List.of(inRange.getId()));
 
             assertTrue(result.isEmpty());
         }
