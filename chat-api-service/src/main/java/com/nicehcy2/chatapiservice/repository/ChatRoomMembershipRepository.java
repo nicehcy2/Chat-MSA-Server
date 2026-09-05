@@ -34,6 +34,9 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
     // 활성 멤버십 조회 — 인가 판정과 joinMessageId(히스토리 floor) 획득을 쿼리 1번으로
     Optional<ChatRoomMembership> findByChatRoomIdAndUserIdAndLeftAtIsNullAndIsBannedFalse(Long chatRoomId, Long userId);
 
+    // (방, 유저)당 1행 모델. 상태(leftAt/isBanned)와 무관하게 그 행을 돌려준다
+    Optional<ChatRoomMembership> findByChatRoomIdAndUserId(Long chatRoomId, Long userId);
+
     // 필터 조건은 chat-service의 워터마크 UPDATE 가드(leftAt IS NULL AND isBanned = false)와 동일하게 유지한다.
     @Query("""
             SELECT new com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto(

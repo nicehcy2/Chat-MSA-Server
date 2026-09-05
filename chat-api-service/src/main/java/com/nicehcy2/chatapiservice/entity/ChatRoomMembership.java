@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 
@@ -30,7 +29,7 @@ public class ChatRoomMembership extends BaseEntity {
     @Column(name = "is_host", nullable = false)
     private Boolean isHost;
 
-    @CreatedDate
+    // 재참여 시 직접 갱신하므로 @CreatedDate를 쓰지 않는다. 신규 생성 시에도 서비스가 세팅
     @Column(name = "joined_at")
     private LocalDateTime joinedAt;
 
@@ -48,4 +47,11 @@ public class ChatRoomMembership extends BaseEntity {
 
     @Column(name = "last_read_message_id")
     private Long lastReadMessageId;
+
+    // 나가 있던 동안의 대화가 보이지 않도록 floor를 새로 잡는다. isBanned는 건드리지 않는다
+    public void rejoin(Long joinMessageId) {
+        this.leftAt = null;
+        this.joinMessageId = joinMessageId;
+        this.joinedAt = LocalDateTime.now();
+    }
 }

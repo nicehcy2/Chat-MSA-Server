@@ -3,6 +3,7 @@ package com.nicehcy2.chatapiservice.controller;
 import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
 import com.nicehcy2.chatapiservice.dto.CreateChatRoomRequestDto;
+import com.nicehcy2.chatapiservice.dto.JoinChatRoomRequestDto;
 import com.nicehcy2.chatapiservice.dto.MessageDto;
 import com.nicehcy2.chatapiservice.service.ChatApiService;
 import com.nicehcy2.chatapiservice.service.ChatRoomService;
@@ -63,6 +64,17 @@ public class ChatApiController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(chatRoomService.createChatRoom(requesterId, request));
+    }
+
+    // body는 비공개방일 때만 의미 있다. 공개방 참여는 body 없이 호출한다
+    @PostMapping("/{chatRoomId}/join")
+    public ResponseEntity<Long> joinChatRoom(
+            @PathVariable Long chatRoomId,
+            @RequestBody(required = false) JoinChatRoomRequestDto request,
+            @RequestHeader("X-User-Id") Long requesterId) {
+
+        String password = request == null ? null : request.password();
+        return ResponseEntity.ok(chatRoomService.joinChatRoom(requesterId, chatRoomId, password));
     }
 
     /**

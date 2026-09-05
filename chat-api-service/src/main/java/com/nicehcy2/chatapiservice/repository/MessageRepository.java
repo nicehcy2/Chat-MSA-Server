@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
@@ -68,4 +69,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
         )
     """)
     List<ChatRoomLastMessageDto> findLastMessages(List<Long> chatRoomIds);
+
+    @Query("SELECT MAX(m.id) FROM Message m WHERE m.chatRoomId = :chatRoomId")
+    Optional<Long> findMaxIdByChatRoomId(Long chatRoomId);
 }
