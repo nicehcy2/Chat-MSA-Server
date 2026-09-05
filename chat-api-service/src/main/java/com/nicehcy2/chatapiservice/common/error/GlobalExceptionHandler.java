@@ -1,6 +1,7 @@
 package com.nicehcy2.chatapiservice.common.error;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -69,6 +70,20 @@ public class GlobalExceptionHandler {
                         ResponseCode._BAD_REQUEST.getCode(),
                         ResponseCode._BAD_REQUEST.getMessage(),
                         fieldErrors
+                ));
+    }
+
+    // unique 위반(같은 유저의 동시 join 등). 트랜잭션이 이미 rollback-only라 서비스에서 삼킬 수 없다
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+
+        log.warn("Data integrity violation: {}", e.getMostSpecificCause().getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        ResponseCode._CONFLICT.getCode(),
+                        ResponseCode._CONFLICT.getMessage()
                 ));
     }
 

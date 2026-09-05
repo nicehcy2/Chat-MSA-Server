@@ -28,10 +28,15 @@ public enum ResponseCode {
     _UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "401", "인증이 필요합니다. 로그인 후 이용해주세요."),
     _FORBIDDEN(HttpStatus.FORBIDDEN, "403", "접근 권한이 없습니다."),
     _METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "405", "허용되지 않는 요청 방식입니다."),
+    _CONFLICT(HttpStatus.CONFLICT, "409", "요청이 충돌했습니다. 잠시 후 다시 시도해주세요."),
 
     // ChatRoom Error
     CHATROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CHATROOM404", "존재하지 않는 채팅방입니다."),
     CHATROOM_ACCESS_DENIED(HttpStatus.FORBIDDEN, "CHATROOM403", "채팅방 멤버가 아닙니다."),
+    CHATROOM_FULL(HttpStatus.CONFLICT, "CHATROOM409", "정원이 가득 찬 채팅방입니다."),
+    CHATROOM_ALREADY_JOINED(HttpStatus.CONFLICT, "CHATROOM4091", "이미 참여 중인 채팅방입니다."),
+    CHATROOM_PASSWORD_MISMATCH(HttpStatus.FORBIDDEN, "CHATROOM4031", "비밀번호가 일치하지 않습니다."),
+    CHATROOM_BANNED(HttpStatus.FORBIDDEN, "CHATROOM4032", "강퇴된 채팅방에는 다시 참여할 수 없습니다."),
 
     // User Error
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404", "존재하지 않는 사용자입니다.");
