@@ -2,7 +2,7 @@ package com.nicehcy2.chatapiservice.controller;
 
 import com.nicehcy2.chatapiservice.config.JwtAuthConverter;
 import com.nicehcy2.chatapiservice.dto.ExploreChatRoomRequestDto;
-import com.nicehcy2.chatapiservice.dto.ExploreRoomDto;
+import com.nicehcy2.chatapiservice.dto.ExploreRoomResponseDto;
 import com.nicehcy2.chatapiservice.dto.ExploreRoomHostDto;
 import com.nicehcy2.chatapiservice.entity.AgeGroup;
 import com.nicehcy2.chatapiservice.entity.JobGroup;
@@ -49,7 +49,7 @@ class ChatApiControllerExploreTest {
     @MockitoBean JwtAuthConverter jwtAuthConverter;
     @MockitoBean JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
-    static final ExploreRoomDto SAMPLE = new ExploreRoomDto(
+    static final ExploreRoomResponseDto SAMPLE = new ExploreRoomResponseDto(
             10L, "무지출 챌린지", "하루 만원", 3, 10, 10_000,
             true, null, Set.of(AgeGroup.TWENTIES), Set.of(),
             false, LocalDateTime.of(2026, 9, 1, 12, 0),

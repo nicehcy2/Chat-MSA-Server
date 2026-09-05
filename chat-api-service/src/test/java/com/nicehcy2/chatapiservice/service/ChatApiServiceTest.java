@@ -2,12 +2,15 @@ package com.nicehcy2.chatapiservice.service;
 
 import com.nicehcy2.chatapiservice.common.error.GeneralException;
 import com.nicehcy2.chatapiservice.common.error.ResponseCode;
+import com.nicehcy2.chatapiservice.dto.ChatRoomDetailDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomHostDto;
 import com.nicehcy2.chatapiservice.dto.ExploreChatRoomRequestDto;
-import com.nicehcy2.chatapiservice.dto.ExploreRoomDto;
+import com.nicehcy2.chatapiservice.dto.ExploreRoomResponseDto;
 import com.nicehcy2.chatapiservice.dto.ExploreRoomHostDto;
+import com.nicehcy2.chatapiservice.dto.MembershipStatus;
 import com.nicehcy2.chatapiservice.entity.AgeGroup;
 import com.nicehcy2.chatapiservice.entity.ChatRoom;
+import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
 import com.nicehcy2.chatapiservice.entity.JobGroup;
 import com.nicehcy2.chatapiservice.repository.ChatRoomMembershipRepository;
 import com.nicehcy2.chatapiservice.repository.ChatRoomRepository;
@@ -18,7 +21,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
@@ -30,9 +35,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -207,7 +215,7 @@ class ChatApiServiceTest {
             stubUserExists();
             stubRooms();
 
-            List<ExploreRoomDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
+            List<ExploreRoomResponseDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
 
             assertNotNull(result);
             assertTrue(result.isEmpty());
@@ -225,7 +233,7 @@ class ChatApiServiceTest {
             when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection())).thenReturn(List.of(host(10L, 11L)));
             when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of());
 
-            ExploreRoomDto dto = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition).get(0);
+            ExploreRoomResponseDto dto = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition).get(0);
 
             assertEquals(10L, dto.chatRoomId());
             assertEquals("방10", dto.title());
@@ -248,7 +256,7 @@ class ChatApiServiceTest {
                     .thenReturn(List.of(host(10L, 1L), host(11L, 2L)));
             when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of());
 
-            List<ExploreRoomDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
+            List<ExploreRoomResponseDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
 
             assertTrue(result.get(0).isPrivate());
             assertFalse(result.get(1).isPrivate());
@@ -262,7 +270,7 @@ class ChatApiServiceTest {
                     .thenReturn(List.of(host(10L, 1L), host(11L, 2L)));
             when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of(11L));
 
-            List<ExploreRoomDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
+            List<ExploreRoomResponseDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
 
             assertFalse(result.get(0).isBanned());
             assertTrue(result.get(1).isBanned());
@@ -279,7 +287,7 @@ class ChatApiServiceTest {
                     .thenReturn(List.of(host(10L, 1L), host(11L, REQUESTER_ID)));
             when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of());
 
-            List<ExploreRoomDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
+            List<ExploreRoomResponseDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
 
             assertEquals(2, result.size());
             assertEquals(10, result.get(0).participationCount());
@@ -292,7 +300,7 @@ class ChatApiServiceTest {
             when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection())).thenReturn(List.of());
             when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of());
 
-            List<ExploreRoomDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
+            List<ExploreRoomResponseDto> result = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition);
 
             assertEquals(1, result.size());
             assertNull(result.get(0).host());
@@ -306,7 +314,7 @@ class ChatApiServiceTest {
             when(chatRoomMembershipRepository.findBannedChatRoomIds(REQUESTER_ID)).thenReturn(List.of());
 
             List<Long> ids = chatApiService.exploreChatRooms(REQUESTER_ID, noCondition).stream()
-                    .map(ExploreRoomDto::chatRoomId).toList();
+                    .map(ExploreRoomResponseDto::chatRoomId).toList();
 
             assertEquals(List.of(30L, 20L, 10L), ids);
         }
@@ -324,6 +332,148 @@ class ChatApiServiceTest {
             ArgumentCaptor<Collection<Long>> captor = ArgumentCaptor.forClass(Collection.class);
             verify(chatRoomMembershipRepository).findHostsByChatRoomIds(captor.capture());
             assertEquals(Set.of(10L, 11L), Set.copyOf(captor.getValue()));
+        }
+    }
+
+    /**
+     * 가입 전 상세. 읽기 전용이라 순서·동시성 검증은 없고, 응답 조립과 요청자 기준 멤버십 상태만 본다.
+     * 비멤버가 보는 화면이므로 비밀번호가 응답에 없는 것이 가장 중요하다.
+     */
+    @Nested
+    class 방_상세 {
+
+        static final Long ROOM_ID = 10L;
+        static final Long HOST_ID = 11L;
+
+        ChatRoom room(String password) {
+            ChatRoom room = ChatRoom.builder()
+                    .title("무지출 챌린지")
+                    .description("하루 만원으로 살기")
+                    .maxParticipants(10)
+                    .participationCount(3)
+                    .dailyLimit(10_000)
+                    .password(password)
+                    .imageUrl("https://img/1.png")
+                    .ageGroups(Set.of(AgeGroup.TWENTIES))
+                    .jobGroups(Set.of(JobGroup.EMPLOYEE))
+                    .build();
+            room.setId(ROOM_ID);
+            return room;
+        }
+
+        ChatRoomMembership membership(boolean banned, LocalDateTime leftAt) {
+            return ChatRoomMembership.builder()
+                    .userId(REQUESTER_ID).isHost(false).isBanned(banned).leftAt(leftAt)
+                    .joinedAt(LocalDateTime.now().minusDays(10))
+                    .build();
+        }
+
+        void stubRoom(ChatRoom room) {
+            when(chatRoomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
+        }
+
+        void stubMembership(Optional<ChatRoomMembership> membership) {
+            when(chatRoomMembershipRepository.findByChatRoomIdAndUserId(ROOM_ID, REQUESTER_ID)).thenReturn(membership);
+        }
+
+        void stubHost() {
+            when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection()))
+                    .thenReturn(List.of(new ChatRoomHostDto(ROOM_ID, HOST_ID, "티끌모아태산", null, AgeGroup.THIRTIES, JobGroup.EMPLOYEE)));
+        }
+
+        @Test
+        void 방_정보와_호스트가_응답에_매핑된다() {
+            ChatRoom room = room(null);
+            LocalDateTime createdAt = LocalDateTime.of(2026, 9, 1, 12, 0);
+            ReflectionTestUtils.setField(room, "createdAt", createdAt);
+            stubRoom(room);
+            stubMembership(Optional.empty());
+            stubHost();
+
+            ChatRoomDetailDto dto = chatApiService.getChatRoomDetail(ROOM_ID, REQUESTER_ID);
+
+            assertEquals(ROOM_ID, dto.chatRoomId());
+            assertEquals("무지출 챌린지", dto.title());
+            assertEquals("하루 만원으로 살기", dto.description());
+            assertEquals(3, dto.participationCount());
+            assertEquals(10, dto.maxParticipants());
+            assertEquals(10_000, dto.dailyLimit());
+            assertFalse(dto.isPrivate());
+            assertEquals("https://img/1.png", dto.imageUrl());
+            assertEquals(Set.of(AgeGroup.TWENTIES), dto.ageGroups());
+            assertEquals(Set.of(JobGroup.EMPLOYEE), dto.jobGroups());
+            assertEquals(createdAt, dto.createdAt());
+            assertEquals(new ExploreRoomHostDto(HOST_ID, "티끌모아태산", null, AgeGroup.THIRTIES, JobGroup.EMPLOYEE), dto.host());
+            assertEquals(MembershipStatus.NONE, dto.membershipStatus());
+        }
+
+        @Test
+        void 비공개방은_isPrivate만_true이고_비밀번호_필드_자체가_응답에_없다() {
+            // 가입 전 상세는 비멤버가 본다. 엔티티를 그대로 내려주는 리팩토링을 막는 가드
+            stubRoom(room("1234"));
+            stubMembership(Optional.empty());
+            stubHost();
+
+            ChatRoomDetailDto dto = chatApiService.getChatRoomDetail(ROOM_ID, REQUESTER_ID);
+
+            assertTrue(dto.isPrivate());
+            assertTrue(Arrays.stream(ChatRoomDetailDto.class.getRecordComponents())
+                    .noneMatch(c -> c.getName().toLowerCase().contains("password")));
+        }
+
+        @Test
+        void 호스트_조회는_해당_방_id_하나로_하고_없으면_host가_null이다() {
+            stubRoom(room(null));
+            stubMembership(Optional.empty());
+            when(chatRoomMembershipRepository.findHostsByChatRoomIds(anyCollection())).thenReturn(List.of());
+
+            ChatRoomDetailDto dto = chatApiService.getChatRoomDetail(ROOM_ID, REQUESTER_ID);
+
+            assertNull(dto.host());
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Collection<Long>> captor = ArgumentCaptor.forClass(Collection.class);
+            verify(chatRoomMembershipRepository).findHostsByChatRoomIds(captor.capture());
+            assertEquals(List.of(ROOM_ID), List.copyOf(captor.getValue()));
+        }
+
+        // 판정 기준은 join API의 멤버십 분기와 같다: isBanned 우선 → leftAt null이면 활성 → 아니면 나감
+        static Stream<Arguments> membershipStates() {
+            LocalDateTime yesterday = LocalDateTime.of(2026, 9, 4, 0, 0);
+            return Stream.of(
+                    Arguments.of("행 없음", Optional.empty(), MembershipStatus.NONE),
+                    Arguments.of("활성", Optional.of(state(false, null)), MembershipStatus.JOINED),
+                    Arguments.of("나감", Optional.of(state(false, yesterday)), MembershipStatus.LEFT),
+                    Arguments.of("강퇴 후 나감", Optional.of(state(true, yesterday)), MembershipStatus.BANNED),
+                    Arguments.of("강퇴, leftAt 없음", Optional.of(state(true, null)), MembershipStatus.BANNED)
+            );
+        }
+
+        static ChatRoomMembership state(boolean banned, LocalDateTime leftAt) {
+            return ChatRoomMembership.builder().userId(REQUESTER_ID).isHost(false).isBanned(banned).leftAt(leftAt).build();
+        }
+
+        @ParameterizedTest(name = "{0} → {2}")
+        @MethodSource("membershipStates")
+        void 요청자의_멤버십_상태를_enum으로_내려준다(String name, Optional<ChatRoomMembership> membership, MembershipStatus expected) {
+            stubRoom(room(null));
+            stubMembership(membership);
+            stubHost();
+
+            ChatRoomDetailDto dto = chatApiService.getChatRoomDetail(ROOM_ID, REQUESTER_ID);
+
+            assertEquals(expected, dto.membershipStatus());
+        }
+
+        @Test
+        void 방이_없으면_404이고_멤버십과_호스트를_조회하지_않는다() {
+            when(chatRoomRepository.findById(ROOM_ID)).thenReturn(Optional.empty());
+
+            GeneralException e = assertThrows(GeneralException.class,
+                    () -> chatApiService.getChatRoomDetail(ROOM_ID, REQUESTER_ID));
+
+            assertEquals(ResponseCode.CHATROOM_NOT_FOUND, e.getErrorCode());
+            verify(chatRoomMembershipRepository, never()).findByChatRoomIdAndUserId(any(), any());
+            verify(chatRoomMembershipRepository, never()).findHostsByChatRoomIds(anyCollection());
         }
     }
 }
