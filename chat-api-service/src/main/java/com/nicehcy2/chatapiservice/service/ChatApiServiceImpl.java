@@ -1,14 +1,20 @@
 package com.nicehcy2.chatapiservice.service;
 
+import com.nicehcy2.chatapiservice.dto.ChatRoomHostDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomLastMessageDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomUnreadCountDto;
+import com.nicehcy2.chatapiservice.dto.ExploreChatRoomRequestDto;
+import com.nicehcy2.chatapiservice.dto.ExploreRoomResponseDto;
+import com.nicehcy2.chatapiservice.dto.ExploreRoomHostDto;
 import com.nicehcy2.chatapiservice.dto.MessageDto;
 import com.nicehcy2.chatapiservice.entity.ChatRoom;
 import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
 import com.nicehcy2.chatapiservice.repository.ChatRoomMembershipRepository;
+import com.nicehcy2.chatapiservice.repository.ChatRoomRepository;
 import com.nicehcy2.chatapiservice.repository.MessageRepository;
+import com.nicehcy2.chatapiservice.repository.UserRepository;
 import com.nicehcy2.chatapiservice.common.error.GeneralException;
 import com.nicehcy2.chatapiservice.common.error.ResponseCode;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +27,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -29,9 +36,14 @@ import java.util.stream.Collectors;
 public class ChatApiServiceImpl implements ChatApiService {
 
     @Value("${CHAT_MESSAGE_PAGE_MAX_SIZE:100}") private int maxMessagePageSize;
+    @Value("${CHAT_EXPLORE_PAGE_MAX_SIZE:50}") private int maxExplorePageSize;
+
+    private static final int DEFAULT_EXPLORE_PAGE_SIZE = 20;
 
     private final MessageRepository messageRepository;
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
+    private final ChatRoomRepository chatRoomRepository;
+    private final UserRepository userRepository;
 
     /**
      * 참여 중인 채팅방 목록. 방 수와 무관하게 쿼리 3개(멤버십+방, 방별 unread, 방별 마지막 메시지)로 조립한다.
@@ -139,5 +151,66 @@ public class ChatApiServiceImpl implements ChatApiService {
         }
 
         return participants;
+    }
+
+    @Override
+    public List<ExploreRoomResponseDto> exploreChatRooms(Long requesterId, ExploreChatRoomRequestDto request) {
+
+        if (!userRepository.existsById(requesterId)) {
+            throw new GeneralException(ResponseCode.USER_NOT_FOUND);
+        }
+
+        int limit = request.limit() == null ? DEFAULT_EXPLORE_PAGE_SIZE : request.limit();
+        if (limit < 1 || limit > maxExplorePageSize) {
+            throw new IllegalArgumentException("limit은 1~" + maxExplorePageSize + " 범위여야 합니다.");
+        }
+
+        List<ChatRoom> rooms = chatRoomRepository.findForExplore(
+                normalizeSearchKeyword(request.q()), request.ageGroup(), request.jobGroup(),
+                request.before(), PageRequest.of(0, limit));
+        if (rooms.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> chatRoomIds = rooms.stream().map(ChatRoom::getId).toList();
+        Map<Long, ChatRoomHostDto> hosts = chatRoomMembershipRepository.findHostsByChatRoomIds(chatRoomIds).stream()
+                .collect(Collectors.toMap(ChatRoomHostDto::chatRoomId, Function.identity()));
+        Set<Long> bannedIds = Set.copyOf(chatRoomMembershipRepository.findBannedChatRoomIds(requesterId));
+
+        return rooms.stream()
+                .map(room -> toExploreRoom(room, hosts.get(room.getId()), bannedIds.contains(room.getId())))
+                .toList();
+    }
+
+    // 쿼리의 ESCAPE '!'와 짝. 이스케이프 문자 자체를 먼저 치환해야 뒤에 붙인 '!'가 다시 치환되지 않는다
+    private static String normalizeSearchKeyword(String q) {
+
+        if (q == null || q.isBlank()) {
+            return null;
+        }
+        return q.trim()
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
+    }
+
+    private static ExploreRoomResponseDto toExploreRoom(ChatRoom room, ChatRoomHostDto host, boolean isBanned) {
+
+        return ExploreRoomResponseDto.builder()
+                .chatRoomId(room.getId())
+                .title(room.getTitle())
+                .description(room.getDescription())
+                .participationCount(room.getParticipationCount())
+                .maxParticipants(room.getMaxParticipants())
+                .dailyLimit(room.getDailyLimit())
+                .isPrivate(room.getPassword() != null)
+                .imageUrl(room.getImageUrl())
+                .ageGroups(room.getAgeGroups())
+                .jobGroups(room.getJobGroups())
+                .isBanned(isBanned)
+                .createdAt(room.getCreatedAt())
+                .host(host == null ? null : new ExploreRoomHostDto(
+                        host.userId(), host.nickname(), host.imageUrl(), host.ageGroup(), host.jobGroup()))
+                .build();
     }
 }

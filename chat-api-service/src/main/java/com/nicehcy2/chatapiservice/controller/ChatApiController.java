@@ -3,6 +3,8 @@ package com.nicehcy2.chatapiservice.controller;
 import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
 import com.nicehcy2.chatapiservice.dto.CreateChatRoomRequestDto;
+import com.nicehcy2.chatapiservice.dto.ExploreChatRoomRequestDto;
+import com.nicehcy2.chatapiservice.dto.ExploreRoomResponseDto;
 import com.nicehcy2.chatapiservice.dto.JoinChatRoomRequestDto;
 import com.nicehcy2.chatapiservice.dto.MessageDto;
 import com.nicehcy2.chatapiservice.service.ChatApiService;
@@ -55,6 +57,14 @@ public class ChatApiController {
             @RequestHeader("X-User-Id") Long requesterId) {
 
         return ResponseEntity.ok(chatApiService.getChatRoomParticipants(chatRoomId, requesterId));
+    }
+
+    @GetMapping("/explore")
+    public ResponseEntity<List<ExploreRoomResponseDto>> exploreChatRooms(
+            @Valid @ModelAttribute ExploreChatRoomRequestDto request,
+            @RequestHeader("X-User-Id") Long requesterId) {
+
+        return ResponseEntity.ok(chatApiService.exploreChatRooms(requesterId, request));
     }
 
     @PostMapping

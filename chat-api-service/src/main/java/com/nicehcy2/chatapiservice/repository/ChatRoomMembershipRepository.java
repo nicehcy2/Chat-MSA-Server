@@ -1,11 +1,13 @@
 package com.nicehcy2.chatapiservice.repository;
 
+import com.nicehcy2.chatapiservice.dto.ChatRoomHostDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomUnreadCountDto;
 import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,4 +49,19 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
               AND cm.leftAt IS NULL AND cm.isBanned = false
             """)
     List<ChatRoomParticipantDto> findParticipantsByChatRoomId(Long chatRoomId);
+
+    @Query("""
+            SELECT new com.nicehcy2.chatapiservice.dto.ChatRoomHostDto(
+                cm.chatRoom.id, u.userId, u.nickname, u.imageUrl, u.ageGroup, u.jobGroup)
+            FROM ChatRoomMembership cm
+            JOIN User u ON cm.userId = u.userId
+            WHERE cm.chatRoom.id IN :chatRoomIds
+              AND cm.isHost = true
+              AND cm.leftAt IS NULL AND cm.isBanned = false
+            """)
+    List<ChatRoomHostDto> findHostsByChatRoomIds(Collection<Long> chatRoomIds);
+
+    // 강퇴는 leftAt과 무관하게 재입장 제한이다
+    @Query("SELECT cm.chatRoom.id FROM ChatRoomMembership cm WHERE cm.userId = :userId AND cm.isBanned = true")
+    List<Long> findBannedChatRoomIds(Long userId);
 }

@@ -2,6 +2,8 @@ package com.nicehcy2.chatapiservice.service;
 
 import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
+import com.nicehcy2.chatapiservice.dto.ExploreChatRoomRequestDto;
+import com.nicehcy2.chatapiservice.dto.ExploreRoomResponseDto;
 import com.nicehcy2.chatapiservice.dto.MessageDto;
 
 import java.util.List;
@@ -24,4 +26,6 @@ public interface ChatApiService {
 
     /** 방 참여자 + 읽음 워터마크 스냅샷. 요청자가 활성 멤버가 아니면 CHATROOM_ACCESS_DENIED. */
     List<ChatRoomParticipantDto> getChatRoomParticipants(Long chatRoomId, Long requesterId);
+
+    List<ExploreRoomResponseDto> exploreChatRooms(Long requesterId, ExploreChatRoomRequestDto request);
 }

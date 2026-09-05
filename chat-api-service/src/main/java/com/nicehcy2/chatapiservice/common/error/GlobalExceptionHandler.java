@@ -5,6 +5,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -28,6 +29,8 @@ import java.util.List;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final String TYPE_MISMATCH_CODE = "typeMismatch";
 
     // IllegalArgumentException/IllegalStateException: 잘못된 인자·상태
     // ServletRequestBindingException: 필수 헤더/파라미터 누락 (예: X-User-Id 없음)
@@ -54,12 +57,13 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    // @Valid 실패는 어떤 필드가 왜 틀렸는지 fieldErrors로 내려준다
+    // @Valid 실패는 어떤 필드가 왜 틀렸는지 fieldErrors로 내려준다.
+    // @ModelAttribute 바인딩의 typeMismatch(enum 오타 등)는 스프링 기본 메시지에 클래스명이 들어 있어 고정 문구로 바꾼다
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e) {
 
         List<FieldErrorDto> fieldErrors = e.getBindingResult().getFieldErrors().stream()
-                .map(f -> new FieldErrorDto(f.getField(), f.getDefaultMessage()))
+                .map(f -> new FieldErrorDto(f.getField(), toClientMessage(f)))
                 .toList();
 
         log.warn("Validation failed: {}", fieldErrors);
@@ -71,6 +75,14 @@ public class GlobalExceptionHandler {
                         ResponseCode._BAD_REQUEST.getMessage(),
                         fieldErrors
                 ));
+    }
+
+    private static String toClientMessage(FieldError fieldError) {
+
+        if (TYPE_MISMATCH_CODE.equals(fieldError.getCode())) {
+            return "값의 형식이 올바르지 않습니다.";
+        }
+        return fieldError.getDefaultMessage();
     }
 
     // unique 위반(같은 유저의 동시 join 등). 트랜잭션이 이미 rollback-only라 서비스에서 삼킬 수 없다
