@@ -1,5 +1,6 @@
 package com.nicehcy2.chatapiservice.service;
 
+import com.nicehcy2.chatapiservice.dto.ChatRoomDetailDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomHostDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomLastMessageDto;
@@ -8,6 +9,7 @@ import com.nicehcy2.chatapiservice.dto.ChatRoomUnreadCountDto;
 import com.nicehcy2.chatapiservice.dto.ExploreChatRoomRequestDto;
 import com.nicehcy2.chatapiservice.dto.ExploreRoomResponseDto;
 import com.nicehcy2.chatapiservice.dto.ExploreRoomHostDto;
+import com.nicehcy2.chatapiservice.dto.MembershipStatus;
 import com.nicehcy2.chatapiservice.dto.MessageDto;
 import com.nicehcy2.chatapiservice.entity.ChatRoom;
 import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
@@ -178,7 +180,8 @@ public class ChatApiServiceImpl implements ChatApiService {
         Set<Long> bannedIds = Set.copyOf(chatRoomMembershipRepository.findBannedChatRoomIds(requesterId));
 
         return rooms.stream()
-                .map(room -> toExploreRoom(room, hosts.get(room.getId()), bannedIds.contains(room.getId())))
+                .map(room -> ExploreRoomResponseDto.from(
+                        room, toHostDto(hosts.get(room.getId())), bannedIds.contains(room.getId())))
                 .toList();
     }
 
@@ -194,9 +197,29 @@ public class ChatApiServiceImpl implements ChatApiService {
                 .replace("_", "!_");
     }
 
-    private static ExploreRoomResponseDto toExploreRoom(ChatRoom room, ChatRoomHostDto host, boolean isBanned) {
+    private static ExploreRoomHostDto toHostDto(ChatRoomHostDto host) {
 
-        return ExploreRoomResponseDto.builder()
+        if (host == null) {
+            return null;
+        }
+        return new ExploreRoomHostDto(host.userId(), host.nickname(), host.imageUrl(), host.ageGroup(), host.jobGroup());
+    }
+
+    @Override
+    public ChatRoomDetailDto getChatRoomDetail(Long chatRoomId, Long requesterId) {
+
+        ChatRoom room = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new GeneralException(ResponseCode.CHATROOM_NOT_FOUND));
+
+        MembershipStatus membershipStatus = chatRoomMembershipRepository.findByChatRoomIdAndUserId(chatRoomId, requesterId)
+                .map(MembershipStatus::from)
+                .orElse(MembershipStatus.NONE);
+
+        ChatRoomHostDto host = chatRoomMembershipRepository.findHostsByChatRoomIds(List.of(chatRoomId)).stream()
+                .findFirst()
+                .orElse(null);
+
+        return ChatRoomDetailDto.builder()
                 .chatRoomId(room.getId())
                 .title(room.getTitle())
                 .description(room.getDescription())
@@ -207,10 +230,9 @@ public class ChatApiServiceImpl implements ChatApiService {
                 .imageUrl(room.getImageUrl())
                 .ageGroups(room.getAgeGroups())
                 .jobGroups(room.getJobGroups())
-                .isBanned(isBanned)
                 .createdAt(room.getCreatedAt())
-                .host(host == null ? null : new ExploreRoomHostDto(
-                        host.userId(), host.nickname(), host.imageUrl(), host.ageGroup(), host.jobGroup()))
+                .host(toHostDto(host))
+                .membershipStatus(membershipStatus)
                 .build();
     }
 }

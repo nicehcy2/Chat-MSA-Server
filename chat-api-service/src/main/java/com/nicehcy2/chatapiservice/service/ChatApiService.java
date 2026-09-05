@@ -1,5 +1,6 @@
 package com.nicehcy2.chatapiservice.service;
 
+import com.nicehcy2.chatapiservice.dto.ChatRoomDetailDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
 import com.nicehcy2.chatapiservice.dto.ExploreChatRoomRequestDto;
@@ -28,4 +29,6 @@ public interface ChatApiService {
     List<ChatRoomParticipantDto> getChatRoomParticipants(Long chatRoomId, Long requesterId);
 
     List<ExploreRoomResponseDto> exploreChatRooms(Long requesterId, ExploreChatRoomRequestDto request);
+
+    ChatRoomDetailDto getChatRoomDetail(Long chatRoomId, Long requesterId);
 }

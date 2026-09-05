@@ -1,5 +1,6 @@
 package com.nicehcy2.chatapiservice.controller;
 
+import com.nicehcy2.chatapiservice.dto.ChatRoomDetailDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomInfoResponseDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
 import com.nicehcy2.chatapiservice.dto.CreateChatRoomRequestDto;
@@ -67,6 +68,15 @@ public class ChatApiController {
         return ResponseEntity.ok(chatApiService.exploreChatRooms(requesterId, request));
     }
 
+    // 가입 전 상세. membershipStatus가 요청자 기준이라 X-User-Id가 필수다
+    @GetMapping("/{chatRoomId}/detail")
+    public ResponseEntity<ChatRoomDetailDto> getChatRoomDetail(
+            @PathVariable Long chatRoomId,
+            @RequestHeader("X-User-Id") Long requesterId) {
+
+        return ResponseEntity.ok(chatApiService.getChatRoomDetail(chatRoomId, requesterId));
+    }
+
     @PostMapping
     public ResponseEntity<Long> createChatRoom(
             @Valid @RequestBody CreateChatRoomRequestDto request,
@@ -87,13 +97,4 @@ public class ChatApiController {
         return ResponseEntity.ok(chatRoomService.joinChatRoom(requesterId, chatRoomId, password));
     }
 
-    /**
-     * 특정 채팅방 조회
-     */
-    /*
-    @GetMapping("/{chatRoomId}/detail")
-    public ResponseEntity<ChatRoomInfoResponseDto> getChatRoomDetail(@PathVariable Long chatRoomId) {
-
-
-    }*/
 }

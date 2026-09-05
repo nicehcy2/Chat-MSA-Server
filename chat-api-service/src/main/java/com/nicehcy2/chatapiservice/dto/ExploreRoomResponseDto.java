@@ -1,6 +1,7 @@
 package com.nicehcy2.chatapiservice.dto;
 
 import com.nicehcy2.chatapiservice.entity.AgeGroup;
+import com.nicehcy2.chatapiservice.entity.ChatRoom;
 import com.nicehcy2.chatapiservice.entity.JobGroup;
 import lombok.Builder;
 
@@ -22,4 +23,23 @@ public record ExploreRoomResponseDto(
         Boolean isBanned,
         LocalDateTime createdAt,
         ExploreRoomHostDto host
-) { }
+) {
+
+    public static ExploreRoomResponseDto from(ChatRoom room, ExploreRoomHostDto host, boolean isBanned) {
+        return ExploreRoomResponseDto.builder()
+                .chatRoomId(room.getId())
+                .title(room.getTitle())
+                .description(room.getDescription())
+                .participationCount(room.getParticipationCount())
+                .maxParticipants(room.getMaxParticipants())
+                .dailyLimit(room.getDailyLimit())
+                .isPrivate(room.getPassword() != null)
+                .imageUrl(room.getImageUrl())
+                .ageGroups(room.getAgeGroups())
+                .jobGroups(room.getJobGroups())
+                .isBanned(isBanned)
+                .createdAt(room.getCreatedAt())
+                .host(host)
+                .build();
+    }
+}
