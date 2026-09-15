@@ -128,6 +128,39 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         return chatRoomId;
     }
 
+    // findNextHost는 호스트 여부와 무관하게 항상 호출한다. "남은 활성 멤버가 있는가"와
+    // "다음 호스트가 누구인가"를 쿼리 하나로 알기 위해서다. 일반 멤버가 마지막이어도 방을 지운다
+    @Transactional
+    @Override
+    public void leaveChatRoom(Long requesterId, Long chatRoomId) {
+
+        if (!userRepository.existsById(requesterId)) {
+            throw new GeneralException(ResponseCode.USER_NOT_FOUND);
+        }
+        ChatRoom room = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new GeneralException(ResponseCode.CHATROOM_NOT_FOUND));
+
+        ChatRoomMembership membership = chatRoomMembershipRepository
+                .findByChatRoomIdAndUserId(chatRoomId, requesterId)
+                .filter(m -> m.getLeftAt() == null && !m.getIsBanned())
+                .orElseThrow(() -> new GeneralException(ResponseCode.CHATROOM_ACCESS_DENIED));
+
+        boolean wasHost = membership.getIsHost();
+        membership.leave();
+        chatRoomRepository.decrementParticipationCount(chatRoomId);
+
+        ChatRoomMembership next = chatRoomMembershipRepository.findNextHost(chatRoomId, requesterId).orElse(null);
+        if (next == null) {
+            // ChatRoom에 멤버십 역방향 연관이 없어 cascade가 없다. FK 때문에 멤버십을 먼저 지운다
+            chatRoomMembershipRepository.deleteByChatRoomId(chatRoomId);
+            chatRoomRepository.delete(room);
+            return;
+        }
+        if (wasHost) {
+            next.promoteToHost();
+        }
+    }
+
     private static String normalizeDescription(String description) {
         if (description == null || description.isBlank()) {
             return null;

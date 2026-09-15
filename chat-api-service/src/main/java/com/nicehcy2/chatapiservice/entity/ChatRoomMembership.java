@@ -54,4 +54,15 @@ public class ChatRoomMembership extends BaseEntity {
         this.joinMessageId = joinMessageId;
         this.joinedAt = LocalDateTime.now();
     }
+
+    // rejoin이 isHost를 건드리지 않으므로 여기서 내려야 재참여 시 호스트가 둘이 되지 않는다.
+    // joinMessageId와 lastReadMessageId는 재참여 시 워터마크로 쓰이므로 유지
+    public void leave() {
+        this.leftAt = LocalDateTime.now();
+        this.isHost = false;
+    }
+
+    public void promoteToHost() {
+        this.isHost = true;
+    }
 }

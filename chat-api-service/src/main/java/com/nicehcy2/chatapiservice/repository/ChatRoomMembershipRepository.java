@@ -5,6 +5,7 @@ import com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto;
 import com.nicehcy2.chatapiservice.dto.ChatRoomUnreadCountDto;
 import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
@@ -63,4 +64,15 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
 
     // 요청자의 멤버십을 결과 방 범위로 한 번에. 상태(leftAt/isBanned)와 무관하게 행을 돌려준다
     List<ChatRoomMembership> findByUserIdAndChatRoomIdIn(Long userId, Collection<Long> chatRoomIds);
+
+    Optional<ChatRoomMembership> findFirstByChatRoomIdAndUserIdNotAndLeftAtIsNullAndIsBannedFalseOrderByJoinedAtAscIdAsc(
+            Long chatRoomId, Long excludeUserId);
+
+    default Optional<ChatRoomMembership> findNextHost(Long chatRoomId, Long excludeUserId) {
+        return findFirstByChatRoomIdAndUserIdNotAndLeftAtIsNullAndIsBannedFalseOrderByJoinedAtAscIdAsc(chatRoomId, excludeUserId);
+    }
+
+    @Modifying
+    @Query("DELETE FROM ChatRoomMembership cm WHERE cm.chatRoom.id = :chatRoomId")
+    int deleteByChatRoomId(Long chatRoomId);
 }

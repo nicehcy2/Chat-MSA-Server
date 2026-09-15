@@ -18,6 +18,10 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     @Query("UPDATE ChatRoom r SET r.participationCount = r.participationCount + 1 " +
            "WHERE r.id = :chatRoomId AND r.participationCount < r.maxParticipants")
     int incrementParticipationCountIfNotFull(Long chatRoomId);
+    @Modifying
+    @Query("UPDATE ChatRoom r SET r.participationCount = r.participationCount - 1 " +
+           "WHERE r.id = :chatRoomId AND r.participationCount > 0")
+    int decrementParticipationCount(Long chatRoomId);
 
     // null인 조건은 생략. 대상 Set이 빈 방은 "전체 대상"이라 필터에 항상 포함된다.
     // q는 서비스가 %·_·!를 '!'로 이스케이프한 값이다

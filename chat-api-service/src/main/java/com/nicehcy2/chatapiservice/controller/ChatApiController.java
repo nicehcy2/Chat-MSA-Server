@@ -97,4 +97,12 @@ public class ChatApiController {
         return ResponseEntity.ok(chatRoomService.joinChatRoom(requesterId, chatRoomId, password));
     }
 
+    @PostMapping("/{chatRoomId}/leave")
+    public ResponseEntity<Void> leaveChatRoom(
+            @PathVariable Long chatRoomId,
+            @RequestHeader("X-User-Id") Long requesterId) {
+
+        chatRoomService.leaveChatRoom(requesterId, chatRoomId);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -19,4 +19,10 @@ public interface ChatRoomService {
      * @return chatRoomId
      */
     Long joinChatRoom(Long requesterId, Long chatRoomId, String password);
+
+    /**
+     * 방을 나간다. 활성 멤버가 아니면 CHATROOM_ACCESS_DENIED.
+     * 호스트가 나가면 가장 오래 참여한 활성 멤버에게 위임하고, 마지막 멤버면 방을 삭제한다.
+     */
+    void leaveChatRoom(Long requesterId, Long chatRoomId);
 }
