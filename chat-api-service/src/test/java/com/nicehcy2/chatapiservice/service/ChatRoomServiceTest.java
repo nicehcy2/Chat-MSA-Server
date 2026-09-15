@@ -34,6 +34,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -615,6 +616,242 @@ class ChatRoomServiceTest {
                         () -> chatRoomService.joinChatRoom(REQUESTER_ID, ROOM_ID, "0000"));
 
                 assertEquals(ResponseCode.CHATROOM_BANNED, e.getErrorCode());
+            }
+        }
+    }
+
+    // =====================================================================
+    // POST /api/chats/{id}/leave
+    // 처리 순서: 유저 존재 → 방 존재 → 활성 멤버십 → leave → count 감소 → 다음 호스트 조회 → 방 삭제 또는 위임
+    // =====================================================================
+    @Nested
+    class 나가기 {
+
+        static final Long ROOM_ID = 10L;
+        static final Long OTHER_ID = 8L;
+
+        ChatRoom roomEntity() {
+            return ChatRoom.builder()
+                    .id(ROOM_ID).title("무지출 챌린지")
+                    .maxParticipants(10).participationCount(3)
+                    .build();
+        }
+
+        ChatRoomMembership membership(ChatRoom room, Long userId, boolean host, boolean banned, LocalDateTime leftAt) {
+            return ChatRoomMembership.builder()
+                    .userId(userId).chatRoom(room)
+                    .isHost(host).isBanned(banned).leftAt(leftAt)
+                    .joinedAt(LocalDateTime.now().minusDays(10))
+                    .joinMessageId(100L).lastReadMessageId(400L)
+                    .build();
+        }
+
+        void stubUserAndRoom(ChatRoom room) {
+            when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+            when(chatRoomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
+        }
+
+        void stubMembership(Optional<ChatRoomMembership> membership) {
+            when(chatRoomMembershipRepository.findByChatRoomIdAndUserId(ROOM_ID, REQUESTER_ID)).thenReturn(membership);
+        }
+
+        void stubNextHost(Optional<ChatRoomMembership> next) {
+            when(chatRoomMembershipRepository.findNextHost(ROOM_ID, REQUESTER_ID)).thenReturn(next);
+        }
+
+        void verifyRoomNotDeleted() {
+            verify(chatRoomMembershipRepository, never()).deleteByChatRoomId(any());
+            verify(chatRoomRepository, never()).delete(any());
+        }
+
+        @Nested
+        class 정상 {
+
+            @Test
+            void 일반_멤버가_나가면_leftAt이_찍히고_자리가_반납되고_위임과_삭제는_없다() {
+                ChatRoom room = roomEntity();
+                ChatRoomMembership me = membership(room, REQUESTER_ID, false, false, null);
+                ChatRoomMembership host = membership(room, OTHER_ID, true, false, null);
+                stubUserAndRoom(room);
+                stubMembership(Optional.of(me));
+                stubNextHost(Optional.of(host));
+
+                chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID);
+
+                assertNotNull(me.getLeftAt());
+                assertFalse(me.getIsHost());
+                assertTrue(host.getIsHost());
+                verify(chatRoomRepository).decrementParticipationCount(ROOM_ID);
+                verifyRoomNotDeleted();
+            }
+
+            @Test
+            void 일반_멤버가_나가도_남은_멤버는_호스트로_승격되지_않는다() {
+                ChatRoom room = roomEntity();
+                ChatRoomMembership me = membership(room, REQUESTER_ID, false, false, null);
+                ChatRoomMembership other = membership(room, OTHER_ID, false, false, null);
+                stubUserAndRoom(room);
+                stubMembership(Optional.of(me));
+                stubNextHost(Optional.of(other));
+
+                chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID);
+
+                assertFalse(other.getIsHost());
+            }
+
+            @Test
+            void 호스트가_나가면_가장_오래된_활성_멤버가_호스트가_되고_나간_사람은_호스트가_아니다() {
+                // 나간 행의 isHost를 내리지 않으면 rejoin이 isHost를 건드리지 않아 호스트가 둘이 된다
+                ChatRoom room = roomEntity();
+                ChatRoomMembership me = membership(room, REQUESTER_ID, true, false, null);
+                ChatRoomMembership next = membership(room, OTHER_ID, false, false, null);
+                stubUserAndRoom(room);
+                stubMembership(Optional.of(me));
+                stubNextHost(Optional.of(next));
+
+                chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID);
+
+                assertTrue(next.getIsHost());
+                assertFalse(me.getIsHost());
+                assertNotNull(me.getLeftAt());
+                verifyRoomNotDeleted();
+            }
+
+            @Test
+            void 호스트가_마지막_멤버면_멤버십과_방을_삭제하고_메시지는_건드리지_않는다() {
+                // 메시지는 크기가 크고 저장소가 바뀔 수 있어 나가기 트랜잭션에서 지우지 않는다. 비동기 정리는 별도 단계
+                ChatRoom room = roomEntity();
+                ChatRoomMembership me = membership(room, REQUESTER_ID, true, false, null);
+                stubUserAndRoom(room);
+                stubMembership(Optional.of(me));
+                stubNextHost(Optional.empty());
+
+                chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID);
+
+                verify(chatRoomMembershipRepository).deleteByChatRoomId(ROOM_ID);
+                verify(chatRoomRepository).delete(room);
+                verifyNoInteractions(messageRepository);
+            }
+
+            @Test
+            void 일반_멤버가_마지막이어도_방을_삭제한다() {
+                // 호스트 행이 없는 비정상 데이터 방어. 활성 멤버 0인 방을 남기지 않는다
+                ChatRoom room = roomEntity();
+                ChatRoomMembership me = membership(room, REQUESTER_ID, false, false, null);
+                stubUserAndRoom(room);
+                stubMembership(Optional.of(me));
+                stubNextHost(Optional.empty());
+
+                chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID);
+
+                verify(chatRoomRepository).delete(room);
+            }
+
+            @Test
+            void 방_삭제는_멤버십을_먼저_지운_뒤_방을_지운다() {
+                // chat-api-service의 ChatRoom에는 멤버십 역방향 연관관계가 없어 cascade가 없다.
+                // 멤버십의 chatroom_id FK 때문에 방을 먼저 지우면 실패한다
+                ChatRoom room = roomEntity();
+                stubUserAndRoom(room);
+                stubMembership(Optional.of(membership(room, REQUESTER_ID, true, false, null)));
+                stubNextHost(Optional.empty());
+
+                chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID);
+
+                InOrder order = inOrder(chatRoomRepository, chatRoomMembershipRepository);
+                order.verify(chatRoomRepository).decrementParticipationCount(ROOM_ID);
+                order.verify(chatRoomMembershipRepository).findNextHost(ROOM_ID, REQUESTER_ID);
+                order.verify(chatRoomMembershipRepository).deleteByChatRoomId(ROOM_ID);
+                order.verify(chatRoomRepository).delete(room);
+            }
+
+            @Test
+            void 나가도_joinMessageId와_lastReadMessageId는_남긴다() {
+                // 재참여 시 joinMessageId만 새로 잡는다. 읽음 워터마크는 유지
+                ChatRoom room = roomEntity();
+                ChatRoomMembership me = membership(room, REQUESTER_ID, false, false, null);
+                stubUserAndRoom(room);
+                stubMembership(Optional.of(me));
+                stubNextHost(Optional.of(membership(room, OTHER_ID, true, false, null)));
+
+                chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID);
+
+                assertEquals(100L, me.getJoinMessageId());
+                assertEquals(400L, me.getLastReadMessageId());
+            }
+        }
+
+        @Nested
+        class 거부 {
+
+            void verifyNothingChanged() {
+                verify(chatRoomRepository, never()).decrementParticipationCount(any());
+                verify(chatRoomMembershipRepository, never()).findNextHost(any(), any());
+                verifyRoomNotDeleted();
+            }
+
+            @Test
+            void 존재하지_않는_유저면_404() {
+                when(userRepository.existsById(REQUESTER_ID)).thenReturn(false);
+
+                GeneralException e = assertThrows(GeneralException.class,
+                        () -> chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID));
+
+                assertEquals(ResponseCode.USER_NOT_FOUND, e.getErrorCode());
+                verifyNothingChanged();
+            }
+
+            @Test
+            void 방이_없으면_404() {
+                when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+                when(chatRoomRepository.findById(ROOM_ID)).thenReturn(Optional.empty());
+
+                GeneralException e = assertThrows(GeneralException.class,
+                        () -> chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID));
+
+                assertEquals(ResponseCode.CHATROOM_NOT_FOUND, e.getErrorCode());
+                verifyNothingChanged();
+            }
+
+            @Test
+            void 멤버십이_없으면_403() {
+                stubUserAndRoom(roomEntity());
+                stubMembership(Optional.empty());
+
+                GeneralException e = assertThrows(GeneralException.class,
+                        () -> chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID));
+
+                assertEquals(ResponseCode.CHATROOM_ACCESS_DENIED, e.getErrorCode());
+                verifyNothingChanged();
+            }
+
+            @Test
+            void 이미_나간_유저면_403이고_leftAt은_그대로다() {
+                ChatRoom room = roomEntity();
+                LocalDateTime previousLeftAt = LocalDateTime.now().minusDays(1);
+                ChatRoomMembership left = membership(room, REQUESTER_ID, false, false, previousLeftAt);
+                stubUserAndRoom(room);
+                stubMembership(Optional.of(left));
+
+                GeneralException e = assertThrows(GeneralException.class,
+                        () -> chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID));
+
+                assertEquals(ResponseCode.CHATROOM_ACCESS_DENIED, e.getErrorCode());
+                assertEquals(previousLeftAt, left.getLeftAt());
+                verifyNothingChanged();
+            }
+
+            @Test
+            void 강퇴된_유저면_403() {
+                ChatRoom room = roomEntity();
+                stubUserAndRoom(room);
+                stubMembership(Optional.of(membership(room, REQUESTER_ID, false, true, LocalDateTime.now().minusDays(1))));
+
+                GeneralException e = assertThrows(GeneralException.class,
+                        () -> chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID));
+
+                assertEquals(ResponseCode.CHATROOM_ACCESS_DENIED, e.getErrorCode());
+                verifyNothingChanged();
             }
         }
     }
