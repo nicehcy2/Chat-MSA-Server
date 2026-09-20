@@ -3,6 +3,8 @@ package com.nicehcy2.chatapiservice.service;
 import com.nicehcy2.chatapiservice.common.error.GeneralException;
 import com.nicehcy2.chatapiservice.common.error.ResponseCode;
 import com.nicehcy2.chatapiservice.dto.CreateChatRoomRequestDto;
+import com.nicehcy2.chatapiservice.dto.event.MembershipEvent;
+import com.nicehcy2.chatapiservice.dto.event.MembershipEventType;
 import com.nicehcy2.chatapiservice.entity.AgeGroup;
 import com.nicehcy2.chatapiservice.entity.ChatRoom;
 import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
@@ -20,6 +22,7 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -44,6 +47,7 @@ class ChatRoomServiceTest {
     @Mock ChatRoomMembershipRepository chatRoomMembershipRepository;
     @Mock UserRepository userRepository;
     @Mock MessageRepository messageRepository;
+    @Mock ApplicationEventPublisher eventPublisher;
 
     @InjectMocks ChatRoomServiceImpl chatRoomService;
 
@@ -406,7 +410,8 @@ class ChatRoomServiceTest {
 
             @Test
             void joinMessageId는_참여_시점_방의_최신_메시지_id다() {
-                // 히스토리 floor: 이 값 이하의 메시지는 커서 조회에서 제외되어 참여 전 대화가 보이지 않는다
+                // 히스토리 floor: 이 값 이하의 메시지는 커서 조회에서 제외되어 참여 전 대화가 보이지 않는다.
+                // 참여 시스템 메시지는 이후에 저장되므로 참여자에게 보인다
                 stubUserAndRoom(publicRoomEntity());
                 stubMembership(Optional.empty());
                 stubJoinSucceeds();
@@ -853,6 +858,151 @@ class ChatRoomServiceTest {
                 assertEquals(ResponseCode.CHATROOM_ACCESS_DENIED, e.getErrorCode());
                 verifyNothingChanged();
             }
+        }
+    }
+
+    // =====================================================================
+    // DELETE /api/chats/{id}/members/{userId}
+    // 처리 순서: 요청자 존재 → 방 존재 → 자기 자신 → 요청자 활성·호스트 → 대상 활성 → ban → count 감소 → 이벤트
+    // =====================================================================
+    @Nested
+    class 강퇴 {
+
+        static final Long ROOM_ID = 10L;
+        static final Long TARGET_ID = 8L;
+
+        ChatRoomMembership membership(Long userId, boolean host, boolean banned, LocalDateTime leftAt) {
+            return ChatRoomMembership.builder()
+                    .userId(userId).isHost(host).isBanned(banned).leftAt(leftAt)
+                    .joinedAt(LocalDateTime.now().minusDays(10))
+                    .build();
+        }
+
+        void stubUserAndRoom() {
+            when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+            when(chatRoomRepository.existsById(ROOM_ID)).thenReturn(true);
+        }
+
+        void stubRequester(Optional<ChatRoomMembership> requester) {
+            when(chatRoomMembershipRepository.findByChatRoomIdAndUserId(ROOM_ID, REQUESTER_ID)).thenReturn(requester);
+        }
+
+        void stubTarget(Optional<ChatRoomMembership> target) {
+            when(chatRoomMembershipRepository.findByChatRoomIdAndUserId(ROOM_ID, TARGET_ID)).thenReturn(target);
+        }
+
+        void verifyNothingChanged() {
+            verify(chatRoomRepository, never()).decrementParticipationCount(any());
+            verify(eventPublisher, never()).publishEvent(any());
+        }
+
+        @Test
+        void 호스트가_활성_멤버를_내보내면_강퇴_상태가_되고_자리가_반납되고_KICKED_이벤트가_발행된다() {
+            ChatRoomMembership target = membership(TARGET_ID, false, false, null);
+            stubUserAndRoom();
+            stubRequester(Optional.of(membership(REQUESTER_ID, true, false, null)));
+            stubTarget(Optional.of(target));
+
+            chatRoomService.kickMember(REQUESTER_ID, ROOM_ID, TARGET_ID);
+
+            assertTrue(target.getIsBanned());
+            assertNotNull(target.getBannedAt());
+            assertNotNull(target.getLeftAt());
+            assertFalse(target.getIsHost());
+            verify(chatRoomRepository).decrementParticipationCount(ROOM_ID);
+            // 대상은 호스트일 수 없으므로 위임과 방 삭제 경로는 타지 않는다
+            verify(chatRoomMembershipRepository, never()).findNextHost(any(), any());
+            verify(chatRoomRepository, never()).delete(any());
+
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            verify(eventPublisher).publishEvent(captor.capture());
+            MembershipEvent event = (MembershipEvent) captor.getValue();
+            assertEquals(MembershipEventType.KICKED, event.type());
+            assertEquals(ROOM_ID, event.chatRoomId());
+            assertEquals(TARGET_ID, event.userId());
+            assertNotNull(event.eventId());
+        }
+
+        @Test
+        void 존재하지_않는_요청자면_404() {
+            when(userRepository.existsById(REQUESTER_ID)).thenReturn(false);
+
+            GeneralException e = assertThrows(GeneralException.class,
+                    () -> chatRoomService.kickMember(REQUESTER_ID, ROOM_ID, TARGET_ID));
+
+            assertEquals(ResponseCode.USER_NOT_FOUND, e.getErrorCode());
+            verifyNothingChanged();
+        }
+
+        @Test
+        void 방이_없으면_404() {
+            when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+            when(chatRoomRepository.existsById(ROOM_ID)).thenReturn(false);
+
+            GeneralException e = assertThrows(GeneralException.class,
+                    () -> chatRoomService.kickMember(REQUESTER_ID, ROOM_ID, TARGET_ID));
+
+            assertEquals(ResponseCode.CHATROOM_NOT_FOUND, e.getErrorCode());
+            verifyNothingChanged();
+        }
+
+        @Test
+        void 자기_자신을_내보내면_400이고_멤버십을_조회하지_않는다() {
+            stubUserAndRoom();
+
+            GeneralException e = assertThrows(GeneralException.class,
+                    () -> chatRoomService.kickMember(REQUESTER_ID, ROOM_ID, REQUESTER_ID));
+
+            assertEquals(ResponseCode.CHATROOM_SELF_KICK, e.getErrorCode());
+            verify(chatRoomMembershipRepository, never()).findByChatRoomIdAndUserId(any(), any());
+            verifyNothingChanged();
+        }
+
+        @Test
+        void 요청자가_활성_멤버가_아니면_403() {
+            stubUserAndRoom();
+            stubRequester(Optional.of(membership(REQUESTER_ID, true, false, LocalDateTime.now().minusDays(1))));
+
+            GeneralException e = assertThrows(GeneralException.class,
+                    () -> chatRoomService.kickMember(REQUESTER_ID, ROOM_ID, TARGET_ID));
+
+            assertEquals(ResponseCode.CHATROOM_ACCESS_DENIED, e.getErrorCode());
+            verifyNothingChanged();
+        }
+
+        @Test
+        void 요청자가_호스트가_아니면_403이고_대상을_조회하지_않는다() {
+            stubUserAndRoom();
+            stubRequester(Optional.of(membership(REQUESTER_ID, false, false, null)));
+
+            GeneralException e = assertThrows(GeneralException.class,
+                    () -> chatRoomService.kickMember(REQUESTER_ID, ROOM_ID, TARGET_ID));
+
+            assertEquals(ResponseCode.CHATROOM_NOT_HOST, e.getErrorCode());
+            verify(chatRoomMembershipRepository, never()).findByChatRoomIdAndUserId(ROOM_ID, TARGET_ID);
+            verifyNothingChanged();
+        }
+
+        @Test
+        void 대상이_멤버가_아니거나_이미_나갔거나_강퇴됐으면_404이고_대상_행은_그대로다() {
+            stubUserAndRoom();
+            stubRequester(Optional.of(membership(REQUESTER_ID, true, false, null)));
+            LocalDateTime previousLeftAt = LocalDateTime.now().minusDays(1);
+            ChatRoomMembership left = membership(TARGET_ID, false, false, previousLeftAt);
+            ChatRoomMembership banned = membership(TARGET_ID, false, true, previousLeftAt);
+            when(chatRoomMembershipRepository.findByChatRoomIdAndUserId(ROOM_ID, TARGET_ID))
+                    .thenReturn(Optional.empty(), Optional.of(left), Optional.of(banned));
+
+            for (int i = 0; i < 3; i++) {
+                GeneralException e = assertThrows(GeneralException.class,
+                        () -> chatRoomService.kickMember(REQUESTER_ID, ROOM_ID, TARGET_ID));
+                assertEquals(ResponseCode.CHATROOM_MEMBER_NOT_FOUND, e.getErrorCode());
+            }
+
+            assertFalse(left.getIsBanned());
+            assertEquals(previousLeftAt, left.getLeftAt());
+            assertNull(banned.getBannedAt());
+            verifyNothingChanged();
         }
     }
 }
