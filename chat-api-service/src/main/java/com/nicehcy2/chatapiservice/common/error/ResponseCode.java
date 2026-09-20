@@ -37,6 +37,9 @@ public enum ResponseCode {
     CHATROOM_ALREADY_JOINED(HttpStatus.CONFLICT, "CHATROOM4091", "이미 참여 중인 채팅방입니다."),
     CHATROOM_PASSWORD_MISMATCH(HttpStatus.FORBIDDEN, "CHATROOM4031", "비밀번호가 일치하지 않습니다."),
     CHATROOM_BANNED(HttpStatus.FORBIDDEN, "CHATROOM4032", "강퇴된 채팅방에는 다시 참여할 수 없습니다."),
+    CHATROOM_NOT_HOST(HttpStatus.FORBIDDEN, "CHATROOM4033", "방장만 할 수 있는 작업입니다."),
+    CHATROOM_SELF_KICK(HttpStatus.BAD_REQUEST, "CHATROOM4001", "자기 자신은 내보낼 수 없습니다."),
+    CHATROOM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHATROOM4041", "채팅방에 없는 멤버입니다."),
 
     // User Error
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404", "존재하지 않는 사용자입니다.");

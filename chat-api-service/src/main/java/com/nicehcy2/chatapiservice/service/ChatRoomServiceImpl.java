@@ -4,6 +4,7 @@ import com.nicehcy2.chatapiservice.common.error.FieldErrorDto;
 import com.nicehcy2.chatapiservice.common.error.GeneralException;
 import com.nicehcy2.chatapiservice.common.error.ResponseCode;
 import com.nicehcy2.chatapiservice.dto.CreateChatRoomRequestDto;
+import com.nicehcy2.chatapiservice.dto.event.MembershipEvent;
 import com.nicehcy2.chatapiservice.entity.AgeGroup;
 import com.nicehcy2.chatapiservice.entity.ChatRoom;
 import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
@@ -13,6 +14,7 @@ import com.nicehcy2.chatapiservice.repository.ChatRoomRepository;
 import com.nicehcy2.chatapiservice.repository.MessageRepository;
 import com.nicehcy2.chatapiservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,8 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
+    // 멤버십 변화는 커밋 뒤 MembershipEventPublisher가 Kafka로 보낸다
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     @Override
@@ -112,19 +116,19 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
         if (existing != null) {
             existing.rejoin(floor);
-            return chatRoomId;
+        } else {
+            chatRoomMembershipRepository.save(ChatRoomMembership.builder()
+                    .userId(requesterId)
+                    .chatRoom(room)
+                    .isHost(false)
+                    .isBanned(false)
+                    .leftAt(null)
+                    .joinMessageId(floor)
+                    .joinedAt(LocalDateTime.now())
+                    .build());
         }
 
-        chatRoomMembershipRepository.save(ChatRoomMembership.builder()
-                .userId(requesterId)
-                .chatRoom(room)
-                .isHost(false)
-                .isBanned(false)
-                .leftAt(null)
-                .joinMessageId(floor)
-                .joinedAt(LocalDateTime.now())
-                .build());
-
+        eventPublisher.publishEvent(MembershipEvent.joined(chatRoomId, requesterId));
         return chatRoomId;
     }
 
@@ -142,7 +146,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
         ChatRoomMembership membership = chatRoomMembershipRepository
                 .findByChatRoomIdAndUserId(chatRoomId, requesterId)
-                .filter(m -> m.getLeftAt() == null && !m.getIsBanned())
+                .filter(ChatRoomMembership::isActive)
                 .orElseThrow(() -> new GeneralException(ResponseCode.CHATROOM_ACCESS_DENIED));
 
         boolean wasHost = membership.getIsHost();
@@ -159,6 +163,39 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         if (wasHost) {
             next.promoteToHost();
         }
+        eventPublisher.publishEvent(MembershipEvent.left(chatRoomId, requesterId));
+    }
+
+    @Transactional
+    @Override
+    public void kickMember(Long requesterId, Long chatRoomId, Long targetUserId) {
+
+        if (!userRepository.existsById(requesterId)) {
+            throw new GeneralException(ResponseCode.USER_NOT_FOUND);
+        }
+        if (!chatRoomRepository.existsById(chatRoomId)) {
+            throw new GeneralException(ResponseCode.CHATROOM_NOT_FOUND);
+        }
+        if (requesterId.equals(targetUserId)) {
+            throw new GeneralException(ResponseCode.CHATROOM_SELF_KICK);
+        }
+
+        ChatRoomMembership requester = chatRoomMembershipRepository
+                .findByChatRoomIdAndUserId(chatRoomId, requesterId)
+                .filter(ChatRoomMembership::isActive)
+                .orElseThrow(() -> new GeneralException(ResponseCode.CHATROOM_ACCESS_DENIED));
+        if (!requester.getIsHost()) {
+            throw new GeneralException(ResponseCode.CHATROOM_NOT_HOST);
+        }
+
+        ChatRoomMembership target = chatRoomMembershipRepository
+                .findByChatRoomIdAndUserId(chatRoomId, targetUserId)
+                .filter(ChatRoomMembership::isActive)
+                .orElseThrow(() -> new GeneralException(ResponseCode.CHATROOM_MEMBER_NOT_FOUND));
+
+        target.ban();
+        chatRoomRepository.decrementParticipationCount(chatRoomId);
+        eventPublisher.publishEvent(MembershipEvent.kicked(chatRoomId, targetUserId));
     }
 
     private static String normalizeDescription(String description) {

@@ -22,7 +22,7 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
             """)
     List<ChatRoomMembership> findActiveMembershipsWithChatRoom(Long userId);
 
-    // 안 읽은 수 = 워터마크(없으면 입장 시점, 그것도 없으면 0) 이후 메시지 수
+    // 안 읽은 수 = 워터마크(없으면 입장 시점, 그것도 없으면 0) 이후 메시지 수. 시스템 메시지는 세지 않는다
     @Query("""
             SELECT new com.nicehcy2.chatapiservice.dto.ChatRoomUnreadCountDto(m.chatRoomId, COUNT(m))
             FROM Message m
@@ -30,6 +30,7 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
             WHERE cm.userId = :userId
               AND cm.leftAt IS NULL AND cm.isBanned = false
               AND m.id > COALESCE(cm.lastReadMessageId, cm.joinMessageId, 0)
+              AND m.messageType <> com.nicehcy2.chatapiservice.entity.enums.MessageType.SYSTEM
             GROUP BY m.chatRoomId
             """)
     List<ChatRoomUnreadCountDto> countUnreadByUserId(Long userId);

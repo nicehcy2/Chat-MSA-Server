@@ -48,6 +48,11 @@ public class ChatRoomMembership extends BaseEntity {
     @Column(name = "last_read_message_id")
     private Long lastReadMessageId;
 
+    // 활성 멤버 정의는 chat-service의 구독·전송 가드, 워터마크 UPDATE 조건과 같아야 한다
+    public boolean isActive() {
+        return leftAt == null && !isBanned;
+    }
+
     // 나가 있던 동안의 대화가 보이지 않도록 floor를 새로 잡는다. isBanned는 건드리지 않는다
     public void rejoin(Long joinMessageId) {
         this.leftAt = null;
@@ -64,5 +69,13 @@ public class ChatRoomMembership extends BaseEntity {
 
     public void promoteToHost() {
         this.isHost = true;
+    }
+
+    public void ban() {
+        LocalDateTime now = LocalDateTime.now();
+        this.isBanned = true;
+        this.bannedAt = now;
+        this.leftAt = now;
+        this.isHost = false;
     }
 }

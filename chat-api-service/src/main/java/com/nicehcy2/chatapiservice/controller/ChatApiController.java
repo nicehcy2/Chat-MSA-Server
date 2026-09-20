@@ -105,4 +105,14 @@ public class ChatApiController {
         chatRoomService.leaveChatRoom(requesterId, chatRoomId);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/{chatRoomId}/members/{userId}")
+    public ResponseEntity<Void> kickMember(
+            @PathVariable Long chatRoomId,
+            @PathVariable Long userId,
+            @RequestHeader("X-User-Id") Long requesterId) {
+
+        chatRoomService.kickMember(requesterId, chatRoomId, userId);
+        return ResponseEntity.noContent().build();
+    }
 }

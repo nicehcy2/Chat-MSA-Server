@@ -25,4 +25,10 @@ public interface ChatRoomService {
      * 호스트가 나가면 가장 오래 참여한 활성 멤버에게 위임하고, 마지막 멤버면 방을 삭제한다.
      */
     void leaveChatRoom(Long requesterId, Long chatRoomId);
+
+    /**
+     * 방장이 멤버를 내보낸다. 대상은 영구 재참여 차단(isBanned).
+     * 방장이 아니면 CHATROOM_NOT_HOST, 대상이 활성 멤버가 아니면 CHATROOM_MEMBER_NOT_FOUND.
+     */
+    void kickMember(Long requesterId, Long chatRoomId, Long targetUserId);
 }

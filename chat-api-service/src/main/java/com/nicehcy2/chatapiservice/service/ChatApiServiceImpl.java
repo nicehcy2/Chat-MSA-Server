@@ -105,6 +105,7 @@ public class ChatApiServiceImpl implements ChatApiService {
             case TEXT -> lastMessage.content();
             case IMAGE -> "사진";
             case RECEIPT -> "영수증";
+            case SYSTEM -> lastMessage.content();
         };
     }
 
