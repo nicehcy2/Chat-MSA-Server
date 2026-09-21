@@ -4,6 +4,7 @@ import com.nicehcy.chatservice.config.socket.SocketConnectionTracker;
 import com.nicehcy.chatservice.dto.MessageResponseDto;
 import com.nicehcy.chatservice.entity.ChatRoomMembership;
 import com.nicehcy.chatservice.entity.FcmToken;
+import com.nicehcy.chatservice.entity.enums.MessageType;
 import com.nicehcy.chatservice.repository.ChatRoomMembershipRepository;
 import com.nicehcy.chatservice.repository.FcmTokenRepository;
 import com.nicehcy.chatservice.service.PushNotificationService;
@@ -37,6 +38,8 @@ public class PushNotificationConsumer {
     public void listenKafkaPushNotificationRecord(@Payload final MessageResponseDto messageDto) {
 
         log.info("푸시 알림 Kafka 리스너 메시지 수신 [{}]", messageDto.messageTSID());
+
+        if (messageDto.messageType() == MessageType.SYSTEM) return;
 
         // 채팅방 멤버 중 발신자를 제외한 유저가 푸시 대상 후보
         List<Long> userIds = chatRoomMembershipRepository.findByChatRoomId(messageDto.chatRoomId())

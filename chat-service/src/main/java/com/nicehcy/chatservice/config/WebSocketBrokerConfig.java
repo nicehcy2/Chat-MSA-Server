@@ -1,6 +1,7 @@
 package com.nicehcy.chatservice.config;
 
 import com.nicehcy.chatservice.config.socket.SocketSessionInterceptor;
+import com.nicehcy.chatservice.config.socket.WebSocketSessionRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -9,6 +10,7 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -17,9 +19,18 @@ public class WebSocketBrokerConfig implements WebSocketMessageBrokerConfigurer {
     @Autowired
     private SocketSessionInterceptor socketSessionInterceptor;
 
+    @Autowired
+    private WebSocketSessionRegistry webSocketSessionRegistry;
+
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(socketSessionInterceptor);
+    }
+
+    // 강퇴 시 서버가 세션을 닫을 수 있도록 이 노드의 세션을 추적한다
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
+        registration.addDecoratorFactory(webSocketSessionRegistry);
     }
 
     @Override

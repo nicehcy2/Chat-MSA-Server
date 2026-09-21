@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -87,6 +88,17 @@ public class SocketConnectionTracker {
             }
         }
         return offlines;
+    }
+
+    /** 이 노드에 붙어 있는 해당 유저의 세션 id 목록. 다른 노드의 세션은 그 노드가 끊는다. */
+    public List<String> localSessionIds(Long userId) {
+        Set<String> members = redisTemplate.opsForSet().members(onlineKey(userId));
+        if (members == null) return List.of();
+        String prefix = nodeId + ":";
+        return members.stream()
+                .filter(member -> member.startsWith(prefix))
+                .map(member -> member.substring(prefix.length()))
+                .toList();
     }
 
     private String onlineKey(Long userId) {
