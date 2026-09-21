@@ -1,3 +1,6 @@
+CHAT_MEMBERSHIP_TOPIC: 'chat-membership-topic' # 멤버십 이벤트(JOINED/LEFT/KICKED). chat-service가 시스템 메시지 저장과 세션 종료에 사용
+CHAT_MESSAGE_PAGE_MAX_SIZE: 100
+
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -15,6 +18,14 @@ spring:
 
   application:
     name: chat-api-service
+
+  kafka:
+    bootstrap-servers: localhost:10000,localhost:10001,localhost:10002
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
 
 server:
   port: 8180
