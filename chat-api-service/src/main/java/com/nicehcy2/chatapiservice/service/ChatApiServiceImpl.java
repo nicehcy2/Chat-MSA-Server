@@ -16,7 +16,7 @@ import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
 import com.nicehcy2.chatapiservice.repository.ChatRoomMembershipRepository;
 import com.nicehcy2.chatapiservice.repository.ChatRoomRepository;
 import com.nicehcy2.chatapiservice.repository.MessageRepository;
-import com.nicehcy2.chatapiservice.repository.UserRepository;
+import com.nicehcy2.chatapiservice.repository.ChatUserProfileRepository;
 import com.nicehcy2.chatapiservice.common.error.GeneralException;
 import com.nicehcy2.chatapiservice.common.error.ResponseCode;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +44,7 @@ public class ChatApiServiceImpl implements ChatApiService {
     private final MessageRepository messageRepository;
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
     private final ChatRoomRepository chatRoomRepository;
-    private final UserRepository userRepository;
+    private final ChatUserProfileRepository chatUserProfileRepository;
 
     /**
      * 참여 중인 채팅방 목록. 방 수와 무관하게 쿼리 3개(멤버십+방, 방별 unread, 방별 마지막 메시지)로 조립한다.
@@ -109,11 +109,6 @@ public class ChatApiServiceImpl implements ChatApiService {
         };
     }
 
-    @Override
-    public List<MessageDto> getChatMessages(Long chatRoomId) {
-
-        return messageRepository.findCustomByChatRoomId(chatRoomId);
-    }
 
     @Override
     public List<MessageDto> getChatMessagesBefore(Long chatRoomId, Long requesterId, Long before, int limit) {
@@ -158,7 +153,7 @@ public class ChatApiServiceImpl implements ChatApiService {
     @Override
     public List<ExploreRoomResponseDto> exploreChatRooms(Long requesterId, ExploreChatRoomRequestDto request) {
 
-        if (!userRepository.existsById(requesterId)) {
+        if (!chatUserProfileRepository.existsByUserIdAndActiveTrue(requesterId)) {
             throw new GeneralException(ResponseCode.USER_NOT_FOUND);
         }
 

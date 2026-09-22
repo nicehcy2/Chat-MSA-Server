@@ -12,7 +12,7 @@ import com.nicehcy2.chatapiservice.entity.JobGroup;
 import com.nicehcy2.chatapiservice.repository.ChatRoomMembershipRepository;
 import com.nicehcy2.chatapiservice.repository.ChatRoomRepository;
 import com.nicehcy2.chatapiservice.repository.MessageRepository;
-import com.nicehcy2.chatapiservice.repository.UserRepository;
+import com.nicehcy2.chatapiservice.repository.ChatUserProfileRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ class ChatRoomServiceTest {
 
     @Mock ChatRoomRepository chatRoomRepository;
     @Mock ChatRoomMembershipRepository chatRoomMembershipRepository;
-    @Mock UserRepository userRepository;
+    @Mock ChatUserProfileRepository chatUserProfileRepository;
     @Mock MessageRepository messageRepository;
     @Mock ApplicationEventPublisher eventPublisher;
 
@@ -74,7 +74,7 @@ class ChatRoomServiceTest {
 
     /** 유저 존재 + 저장 시 id 부여. 성공 경로 공통 stub. */
     void stubHappyPath() {
-        when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+        when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(true);
         when(chatRoomRepository.save(any(ChatRoom.class))).thenAnswer(inv -> {
             ChatRoom room = inv.getArgument(0);
             room.setId(SAVED_ROOM_ID);
@@ -263,7 +263,7 @@ class ChatRoomServiceTest {
 
         @Test
         void 비공개방인데_비밀번호가_없으면_400이고_fieldErrors에_password가_담긴다() {
-            when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+            when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(true);
             CreateChatRoomRequestDto request = publicRoom.toBuilder()
                     .isPrivate(true).password(null).build();
 
@@ -278,7 +278,7 @@ class ChatRoomServiceTest {
 
         @Test
         void 비공개방인데_비밀번호가_공백이면_없는_것으로_본다() {
-            when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+            when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(true);
             CreateChatRoomRequestDto request = publicRoom.toBuilder()
                     .isPrivate(true).password("   ").build();
 
@@ -293,7 +293,7 @@ class ChatRoomServiceTest {
         void 존재하지_않는_유저면_404이고_아무것도_저장하지_않는다() {
             // membership.userId가 FK가 아니라 DB가 막아주지 않는다.
             // TODO(탈퇴 API 구현 시): status=false(탈퇴) 유저도 거부하도록 findById + status 검사로 확장
-            when(userRepository.existsById(REQUESTER_ID)).thenReturn(false);
+            when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(false);
 
             GeneralException e = assertThrows(GeneralException.class,
                     () -> chatRoomService.createChatRoom(REQUESTER_ID, publicRoom));
@@ -340,7 +340,7 @@ class ChatRoomServiceTest {
         }
 
         void stubUserAndRoom(ChatRoom room) {
-            when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+            when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(true);
             when(chatRoomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
         }
 
@@ -482,7 +482,7 @@ class ChatRoomServiceTest {
 
             @Test
             void 방이_없으면_404() {
-                when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+                when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(true);
                 when(chatRoomRepository.findById(ROOM_ID)).thenReturn(Optional.empty());
 
                 GeneralException e = assertThrows(GeneralException.class,
@@ -494,7 +494,7 @@ class ChatRoomServiceTest {
 
             @Test
             void 존재하지_않는_유저면_404() {
-                when(userRepository.existsById(REQUESTER_ID)).thenReturn(false);
+                when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(false);
 
                 GeneralException e = assertThrows(GeneralException.class,
                         () -> chatRoomService.joinChatRoom(REQUESTER_ID, ROOM_ID, null));
@@ -652,7 +652,7 @@ class ChatRoomServiceTest {
         }
 
         void stubUserAndRoom(ChatRoom room) {
-            when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+            when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(true);
             when(chatRoomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
         }
 
@@ -797,7 +797,7 @@ class ChatRoomServiceTest {
 
             @Test
             void 존재하지_않는_유저면_404() {
-                when(userRepository.existsById(REQUESTER_ID)).thenReturn(false);
+                when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(false);
 
                 GeneralException e = assertThrows(GeneralException.class,
                         () -> chatRoomService.leaveChatRoom(REQUESTER_ID, ROOM_ID));
@@ -808,7 +808,7 @@ class ChatRoomServiceTest {
 
             @Test
             void 방이_없으면_404() {
-                when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+                when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(true);
                 when(chatRoomRepository.findById(ROOM_ID)).thenReturn(Optional.empty());
 
                 GeneralException e = assertThrows(GeneralException.class,
@@ -879,7 +879,7 @@ class ChatRoomServiceTest {
         }
 
         void stubUserAndRoom() {
-            when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+            when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(true);
             when(chatRoomRepository.existsById(ROOM_ID)).thenReturn(true);
         }
 
@@ -925,7 +925,7 @@ class ChatRoomServiceTest {
 
         @Test
         void 존재하지_않는_요청자면_404() {
-            when(userRepository.existsById(REQUESTER_ID)).thenReturn(false);
+            when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(false);
 
             GeneralException e = assertThrows(GeneralException.class,
                     () -> chatRoomService.kickMember(REQUESTER_ID, ROOM_ID, TARGET_ID));
@@ -936,7 +936,7 @@ class ChatRoomServiceTest {
 
         @Test
         void 방이_없으면_404() {
-            when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+            when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(true);
             when(chatRoomRepository.existsById(ROOM_ID)).thenReturn(false);
 
             GeneralException e = assertThrows(GeneralException.class,

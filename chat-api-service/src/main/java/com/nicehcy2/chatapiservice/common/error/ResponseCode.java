@@ -42,7 +42,10 @@ public enum ResponseCode {
     CHATROOM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHATROOM4041", "채팅방에 없는 멤버입니다."),
 
     // User Error
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404", "존재하지 않는 사용자입니다.");
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404", "존재하지 않는 사용자입니다."),
+
+    // FCM Error
+    FCM_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "FCM404", "존재하지 않는 FCM 토큰입니다.");
 
     private final HttpStatus httpStatus;
     private final String code; // 클라이언트 식별용 코드 (예: "CHATROOM403")

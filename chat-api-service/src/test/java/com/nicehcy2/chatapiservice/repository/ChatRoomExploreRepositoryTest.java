@@ -5,8 +5,7 @@ import com.nicehcy2.chatapiservice.entity.AgeGroup;
 import com.nicehcy2.chatapiservice.entity.ChatRoom;
 import com.nicehcy2.chatapiservice.entity.ChatRoomMembership;
 import com.nicehcy2.chatapiservice.entity.JobGroup;
-import com.nicehcy2.chatapiservice.entity.User;
-import com.nicehcy2.chatapiservice.entity.UserRole;
+import com.nicehcy2.chatapiservice.entity.ChatUserProfile;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,19 +54,16 @@ class ChatRoomExploreRepositoryTest {
         return room(title, null, ANY_AGE, ANY_JOB);
     }
 
-    User user(String nickname, AgeGroup ageGroup, JobGroup jobGroup) {
-        return em.persistAndFlush(User.builder()
+    // 사본 테이블은 id를 user-service가 정하므로 테스트가 직접 부여한다
+    long nextUserId = 1;
+
+    ChatUserProfile user(String nickname, AgeGroup ageGroup, JobGroup jobGroup) {
+        return em.persistAndFlush(ChatUserProfile.builder()
+                .userId(nextUserId++)
                 .nickname(nickname)
-                .userRole(UserRole.USER)
-                .gender("M")
                 .ageGroup(ageGroup)
-                .birthDay("2000-01-01")
                 .jobGroup(jobGroup)
-                .email(nickname + "@test.com")
-                .password("x".repeat(60))
-                .reward(0)
-                .status(true)
-                .dayTargetExpenditure(10_000)
+                .active(true)
                 .build());
     }
 
@@ -262,9 +258,9 @@ class ChatRoomExploreRepositoryTest {
 
         @Test
         void 방_id_목록의_활성_호스트를_유저_정보와_함께_한_번에_돌려준다() {
-            User host1 = user("host1", AgeGroup.THIRTIES, JobGroup.EMPLOYEE);
-            User host2 = user("host2", AgeGroup.TWENTIES, JobGroup.STUDENT);
-            User member = user("member", AgeGroup.FORTIES, JobGroup.HOMEMAKER);
+            ChatUserProfile host1 = user("host1", AgeGroup.THIRTIES, JobGroup.EMPLOYEE);
+            ChatUserProfile host2 = user("host2", AgeGroup.TWENTIES, JobGroup.STUDENT);
+            ChatUserProfile member = user("member", AgeGroup.FORTIES, JobGroup.HOMEMAKER);
             ChatRoom r1 = room("r1");
             ChatRoom r2 = room("r2");
             membership(r1, host1.getUserId(), true, false, null);
@@ -282,7 +278,7 @@ class ChatRoomExploreRepositoryTest {
 
         @Test
         void 목록에_없는_방의_호스트는_돌려주지_않는다() {
-            User host = user("host", AgeGroup.THIRTIES, JobGroup.EMPLOYEE);
+            ChatUserProfile host = user("host", AgeGroup.THIRTIES, JobGroup.EMPLOYEE);
             ChatRoom asked = room("asked");
             ChatRoom other = room("other");
             membership(asked, host.getUserId(), true, false, null);
@@ -297,7 +293,7 @@ class ChatRoomExploreRepositoryTest {
         @Test
         void 나갔거나_강퇴된_호스트_멤버십은_돌려주지_않는다() {
             // 호스트 위임 전 상태 방어. 방은 목록에 남고 host만 null이 된다(서비스 테스트 참고)
-            User host = user("host", AgeGroup.THIRTIES, JobGroup.EMPLOYEE);
+            ChatUserProfile host = user("host", AgeGroup.THIRTIES, JobGroup.EMPLOYEE);
             ChatRoom leftRoom = room("left");
             ChatRoom bannedRoom = room("banned");
             membership(leftRoom, host.getUserId(), true, false, LocalDateTime.now());

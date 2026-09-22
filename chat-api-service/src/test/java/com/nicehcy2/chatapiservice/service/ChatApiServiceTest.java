@@ -15,7 +15,7 @@ import com.nicehcy2.chatapiservice.entity.JobGroup;
 import com.nicehcy2.chatapiservice.repository.ChatRoomMembershipRepository;
 import com.nicehcy2.chatapiservice.repository.ChatRoomRepository;
 import com.nicehcy2.chatapiservice.repository.MessageRepository;
-import com.nicehcy2.chatapiservice.repository.UserRepository;
+import com.nicehcy2.chatapiservice.repository.ChatUserProfileRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,7 +57,7 @@ class ChatApiServiceTest {
     @Mock MessageRepository messageRepository;
     @Mock ChatRoomMembershipRepository chatRoomMembershipRepository;
     @Mock ChatRoomRepository chatRoomRepository;
-    @Mock UserRepository userRepository;
+    @Mock ChatUserProfileRepository chatUserProfileRepository;
 
     @InjectMocks ChatApiServiceImpl chatApiService;
 
@@ -100,7 +100,7 @@ class ChatApiServiceTest {
         }
 
         void stubUserExists() {
-            when(userRepository.existsById(REQUESTER_ID)).thenReturn(true);
+            when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(true);
         }
 
         void stubRooms(ChatRoom... rooms) {
@@ -123,7 +123,7 @@ class ChatApiServiceTest {
 
         @Test
         void 존재하지_않는_유저면_404이고_방을_조회하지_않는다() {
-            when(userRepository.existsById(REQUESTER_ID)).thenReturn(false);
+            when(chatUserProfileRepository.existsByUserIdAndActiveTrue(REQUESTER_ID)).thenReturn(false);
 
             GeneralException e = assertThrows(GeneralException.class,
                     () -> chatApiService.exploreChatRooms(REQUESTER_ID, noCondition));
