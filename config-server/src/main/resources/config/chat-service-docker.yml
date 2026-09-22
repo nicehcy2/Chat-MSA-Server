@@ -5,6 +5,8 @@ PUSH_GROUP_ID: 'push-notification-group'
 CHAT_TOPIC: 'chat-topic'
 CHAT_READ_TOPIC: 'chat-read-topic' # 읽음 이벤트 전용 토픽 (메시지 토픽과 분리)
 CHAT_MEMBERSHIP_TOPIC: 'chat-membership-topic' # 멤버십 이벤트 토픽 (chat-api-service가 발행, 전 노드가 수신해 시스템 메시지 저장·세션 종료)
+USER_PROFILE_TOPIC: 'user-profile-topic' # user-service 프로필 변경 이벤트 (user_outbox → Debezium). chat_user_profile 사본 갱신
+USER_PROFILE_GROUP_ID: 'chat-user-profile-group' # DB 쓰기라 전 노드가 공유하는 단일 그룹
 
 spring:
   datasource:
