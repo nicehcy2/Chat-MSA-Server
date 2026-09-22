@@ -3,11 +3,9 @@ package com.nicehcy.chatservice.service;
 import com.github.f4b6a3.tsid.TsidCreator;
 import com.nicehcy.chatservice.dto.MessageResponseDto;
 import com.nicehcy.chatservice.dto.converter.MessageDtoConverter;
-import com.nicehcy.chatservice.dto.converter.MessagePayloadConverter;
-import com.nicehcy.chatservice.entity.Outbox;
 import com.nicehcy.chatservice.entity.enums.MessageType;
+import com.nicehcy.chatservice.messaging.OutboxWriter;
 import com.nicehcy.chatservice.repository.MessageRepository;
-import com.nicehcy.chatservice.repository.OutboxRepository;
 import com.nicehcy.chatservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +25,7 @@ import java.time.LocalDateTime;
 public class SystemMessageService {
 
     private final MessageRepository messageRepository;
-    private final OutboxRepository outboxRepository;
+    private final OutboxWriter outboxWriter;
     private final UserRepository userRepository;
 
     public void memberJoined(Long chatRoomId, Long userId) {
@@ -64,7 +62,6 @@ public class SystemMessageService {
                 .build();
 
         messageRepository.save(MessageDtoConverter.toMessage(message));
-        outboxRepository.save(new Outbox("CHAT", String.valueOf(chatRoomId), "MESSAGE_SENT",
-                MessagePayloadConverter.toJson(message)));
+        outboxWriter.messageSent(message);
     }
 }

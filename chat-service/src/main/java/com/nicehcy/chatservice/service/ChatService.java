@@ -3,11 +3,9 @@ package com.nicehcy.chatservice.service;
 import com.nicehcy.chatservice.dto.MessageResponseDto;
 import com.nicehcy.chatservice.dto.MessageSendRequestDto;
 import com.nicehcy.chatservice.dto.converter.MessageDtoConverter;
-import com.nicehcy.chatservice.dto.converter.MessagePayloadConverter;
-import com.nicehcy.chatservice.entity.Outbox;
+import com.nicehcy.chatservice.messaging.OutboxWriter;
 import com.nicehcy.chatservice.repository.ChatRoomMembershipRepository;
 import com.nicehcy.chatservice.repository.MessageRepository;
-import com.nicehcy.chatservice.repository.OutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +18,7 @@ import static com.nicehcy.chatservice.dto.converter.MessageDtoIdInjector.withGen
 @RequiredArgsConstructor
 public class ChatService {
 
-    private final OutboxRepository outboxRepository;
+    private final OutboxWriter outboxWriter;
     private final MessageRepository messageRepository;
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
 
@@ -47,7 +45,7 @@ public class ChatService {
         messageRepository.save(MessageDtoConverter.toMessage(messageDtoWithId));
         log.info("[3/5] 채팅 메시지 저장 완료 - chatRoomId: {}, senderId: {}", messageDtoWithId.chatRoomId(), messageDtoWithId.senderId());
         // outbox 저장소에 저장
-        saveMessageToOutbox(messageDtoWithId);
+        outboxWriter.messageSent(messageDtoWithId);
         log.info("[4/5] 메시지 Outbox 저장 완료 (chatRoomId: {}, senderId: {})", messageDtoWithId.chatRoomId(), messageDtoWithId.senderId());
         // 발신자는 자기 메시지를 읽은 것으로 친다
         advanceSenderWatermark(messageDtoWithId);
@@ -60,11 +58,5 @@ public class ChatService {
                 messageDto.chatRoomId(),
                 messageDto.senderId(),
                 Long.parseLong(messageDto.messageTSID()));
-    }
-
-    private void saveMessageToOutbox(MessageResponseDto messageDto) {
-
-        Outbox outbox = new Outbox("CHAT",  messageDto.chatRoomId().toString(),"MESSAGE_SENT", MessagePayloadConverter.toJson(messageDto));
-        outboxRepository.save(outbox);
     }
 }
