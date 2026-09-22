@@ -54,6 +54,9 @@ class AuthServiceTest {
     @Mock
     ValueOperations<String, RedisSessionDto> valueOperations;
 
+    @Mock
+    UserProfileEventWriter userProfileEventWriter;
+
     @InjectMocks
     // 테스트 대상 "실제 객체"
     // 위의 @Mock 들이 생성자 기준으로 자동 주입됨
@@ -280,6 +283,8 @@ class AuthServiceTest {
 
         // === then ===
         assertEquals(savedUser.getUserId(), userId);
+        // 채팅 프로필 사본이 가입 시점부터 따라오도록 저장된 유저로 이벤트를 남긴다
+        verify(userProfileEventWriter).profileChanged(savedUser);
     }
 
     @Test

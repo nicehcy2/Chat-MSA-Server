@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserProfileEventWriter userProfileEventWriter;
 
     @Transactional(readOnly = true)
     public MyPageUserInfoResponseDto getUserInfo(Long userId) {
@@ -49,5 +50,6 @@ public class UserService {
                 userInfoRequestDto.jobGroup() != null ? JobGroup.valueOf(userInfoRequestDto.jobGroup()) : null,
                 userInfoRequestDto.imageUrl()
         );
+        userProfileEventWriter.profileChanged(user);
     }
 }

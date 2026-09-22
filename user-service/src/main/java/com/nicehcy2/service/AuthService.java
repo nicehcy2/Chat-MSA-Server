@@ -26,6 +26,7 @@ public class AuthService {
     private final PasswordEncoder encoder;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, RedisSessionDto> redisTemplate;
+    private final UserProfileEventWriter userProfileEventWriter;
 
     public LoginResponseDto login(LoginRequestDto requestDto) {
 
@@ -199,6 +200,7 @@ public class AuthService {
 
         final User user = User.of(signupRequestDto, encodedPassword);
         final User saved = userRepository.save(user);
+        userProfileEventWriter.profileChanged(saved);
 
         return saved.getUserId();
     }
