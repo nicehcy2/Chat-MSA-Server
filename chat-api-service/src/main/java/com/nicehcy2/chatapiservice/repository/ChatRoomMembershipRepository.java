@@ -44,9 +44,9 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
     // 필터 조건은 chat-service의 워터마크 UPDATE 가드(leftAt IS NULL AND isBanned = false)와 동일하게 유지한다.
     @Query("""
             SELECT new com.nicehcy2.chatapiservice.dto.ChatRoomParticipantDto(
-                u.userId, u.nickname, u.imageUrl, cm.isHost, cm.lastReadMessageId)
+                p.userId, p.nickname, p.imageUrl, cm.isHost, cm.lastReadMessageId)
             FROM ChatRoomMembership cm
-            JOIN User u ON cm.userId = u.userId
+            JOIN ChatUserProfile p ON cm.userId = p.userId
             WHERE cm.chatRoom.id = :chatRoomId
               AND cm.leftAt IS NULL AND cm.isBanned = false
             """)
@@ -54,9 +54,9 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
 
     @Query("""
             SELECT new com.nicehcy2.chatapiservice.dto.ChatRoomHostDto(
-                cm.chatRoom.id, u.userId, u.nickname, u.imageUrl, u.ageGroup, u.jobGroup)
+                cm.chatRoom.id, p.userId, p.nickname, p.imageUrl, p.ageGroup, p.jobGroup)
             FROM ChatRoomMembership cm
-            JOIN User u ON cm.userId = u.userId
+            JOIN ChatUserProfile p ON cm.userId = p.userId
             WHERE cm.chatRoom.id IN :chatRoomIds
               AND cm.isHost = true
               AND cm.leftAt IS NULL AND cm.isBanned = false

@@ -17,8 +17,6 @@ public interface ChatApiService {
     /** 참여 중인 채팅방 목록 (안 읽은 수, 마지막 메시지 포함) */
     List<ChatRoomInfoResponseDto> getChatRoomDetails(Long userId);
 
-    List<MessageDto> getChatMessages(Long chatRoomId);
-
     /**
      * 커서 기반 메시지 동기화. before 이전(exclusive) 메시지를 시간순(ASC)으로 최대 limit개.
      * 요청자가 활성 멤버가 아니면 CHATROOM_ACCESS_DENIED.

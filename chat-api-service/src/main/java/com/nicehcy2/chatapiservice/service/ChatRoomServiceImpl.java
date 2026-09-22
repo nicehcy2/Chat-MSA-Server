@@ -12,7 +12,7 @@ import com.nicehcy2.chatapiservice.entity.JobGroup;
 import com.nicehcy2.chatapiservice.repository.ChatRoomMembershipRepository;
 import com.nicehcy2.chatapiservice.repository.ChatRoomRepository;
 import com.nicehcy2.chatapiservice.repository.MessageRepository;
-import com.nicehcy2.chatapiservice.repository.UserRepository;
+import com.nicehcy2.chatapiservice.repository.ChatUserProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -33,7 +33,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMembershipRepository chatRoomMembershipRepository;
-    private final UserRepository userRepository;
+    private final ChatUserProfileRepository chatUserProfileRepository;
     private final MessageRepository messageRepository;
     // 멤버십 변화는 커밋 뒤 MembershipEventPublisher가 Kafka로 보낸다
     private final ApplicationEventPublisher eventPublisher;
@@ -42,7 +42,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Override
     public Long createChatRoom(Long requesterId, CreateChatRoomRequestDto dto) {
 
-        if (!userRepository.existsById(requesterId)) {
+        if (!chatUserProfileRepository.existsByUserIdAndActiveTrue(requesterId)) {
             throw new GeneralException(ResponseCode.USER_NOT_FOUND);
         }
 
@@ -85,7 +85,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Override
     public Long joinChatRoom(Long requesterId, Long chatRoomId, String password) {
 
-        if (!userRepository.existsById(requesterId)) {
+        if (!chatUserProfileRepository.existsByUserIdAndActiveTrue(requesterId)) {
             throw new GeneralException(ResponseCode.USER_NOT_FOUND);
         }
         ChatRoom room = chatRoomRepository.findById(chatRoomId)
@@ -138,7 +138,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Override
     public void leaveChatRoom(Long requesterId, Long chatRoomId) {
 
-        if (!userRepository.existsById(requesterId)) {
+        if (!chatUserProfileRepository.existsByUserIdAndActiveTrue(requesterId)) {
             throw new GeneralException(ResponseCode.USER_NOT_FOUND);
         }
         ChatRoom room = chatRoomRepository.findById(chatRoomId)
@@ -170,7 +170,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Override
     public void kickMember(Long requesterId, Long chatRoomId, Long targetUserId) {
 
-        if (!userRepository.existsById(requesterId)) {
+        if (!chatUserProfileRepository.existsByUserIdAndActiveTrue(requesterId)) {
             throw new GeneralException(ResponseCode.USER_NOT_FOUND);
         }
         if (!chatRoomRepository.existsById(chatRoomId)) {

@@ -12,23 +12,6 @@ import java.util.Optional;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
-    @Query("""
-        select new com.nicehcy2.chatapiservice.dto.MessageDto(
-            m.id,
-            m.chatRoomId,
-            m.senderId,
-            m.messageType,
-            m.content,
-            m.timestamp,
-            u.imageUrl,
-            u.nickname
-        )
-        from Message m
-        join User u on m.senderId = u.userId
-        where m.chatRoomId = :chatRoomId
-        order by m.id asc
-    """)
-    List<MessageDto> findCustomByChatRoomId(Long chatRoomId);
 
     /**
      * 커서 기반 메시지 조회 (최신 → 과거 방향).
@@ -46,11 +29,11 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             m.messageType,
             m.content,
             m.timestamp,
-            u.imageUrl,
-            u.nickname
+            p.imageUrl,
+            p.nickname
         )
         from Message m
-        join User u on m.senderId = u.userId
+        join ChatUserProfile p on m.senderId = p.userId
         where m.chatRoomId = :chatRoomId
           and (:before is null or m.id < :before)
           and (:floor is null or m.id > :floor)
