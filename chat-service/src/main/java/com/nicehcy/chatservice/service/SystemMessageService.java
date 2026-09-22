@@ -6,7 +6,8 @@ import com.nicehcy.chatservice.dto.converter.MessageDtoConverter;
 import com.nicehcy.chatservice.entity.enums.MessageType;
 import com.nicehcy.chatservice.messaging.OutboxWriter;
 import com.nicehcy.chatservice.repository.MessageRepository;
-import com.nicehcy.chatservice.repository.UserRepository;
+import com.nicehcy.chatservice.repository.ChatUserProfileRepository;
+import com.nicehcy.chatservice.entity.ChatUserProfile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class SystemMessageService {
 
     private final MessageRepository messageRepository;
     private final OutboxWriter outboxWriter;
-    private final UserRepository userRepository;
+    private final ChatUserProfileRepository chatUserProfileRepository;
 
     public void memberJoined(Long chatRoomId, Long userId) {
         write(chatRoomId, userId, "님이 참여했습니다");
@@ -40,11 +41,11 @@ public class SystemMessageService {
         write(chatRoomId, userId, "님이 내보내졌습니다");
     }
 
-    // senderId는 행위자다. 히스토리 조회가 User와 inner join이라 null이면 시스템 메시지가 결과에서 빠진다
+    // senderId는 행위자다. 히스토리 조회가 ChatUserProfile과 inner join이라 null이면 시스템 메시지가 결과에서 빠진다
     private void write(Long chatRoomId, Long userId, String suffix) {
 
-        String nickname = userRepository.findById(userId)
-                .map(user -> user.getNickname())
+        String nickname = chatUserProfileRepository.findById(userId)
+                .map(ChatUserProfile::getNickname)
                 .orElse(null);
         if (nickname == null) {
             log.warn("시스템 메시지 스킵 - 유저 없음 [userId: {}, chatRoomId: {}]", userId, chatRoomId);
