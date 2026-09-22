@@ -3,9 +3,9 @@ spring:
     name: user-service
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://mysql:3306/chatdb
-    username: guest
-    password: guest
+    url: jdbc:mysql://mysql:3306/userdb
+    username: user_service
+    password: user_service
   jpa:
     properties:
       hibernate:
