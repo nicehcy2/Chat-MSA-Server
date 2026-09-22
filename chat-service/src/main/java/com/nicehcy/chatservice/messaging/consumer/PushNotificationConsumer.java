@@ -56,7 +56,7 @@ public class PushNotificationConsumer {
         // 처음에는 Redis에서 조회
         // Redis에 없으면 DB 조회
         // 같은 기기의 토큰이 중복 등록돼 있어도 한 번만 발송되도록 distinct 처리
-        List<String> fcmTokens = fcmTokenRepository.findByUserUserIdIn(offlineUserIds)
+        List<String> fcmTokens = fcmTokenRepository.findByUserIdIn(offlineUserIds)
                 .stream()
                 .map(FcmToken::getToken)
                 .distinct()

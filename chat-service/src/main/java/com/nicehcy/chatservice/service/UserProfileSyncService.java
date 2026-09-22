@@ -45,7 +45,7 @@ public class UserProfileSyncService {
 
         // 탈퇴 유저에게 푸시가 가지 않도록. users FK의 cascade를 이벤트가 대신한다
         if (!event.active()) {
-            fcmTokenRepository.deleteByUserUserId(event.userId());
+            fcmTokenRepository.deleteByUserId(event.userId());
         }
     }
 
