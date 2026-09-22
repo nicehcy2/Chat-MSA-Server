@@ -47,10 +47,7 @@ public enum ResponseCode {
     // Redis(Session) Error
     SESSION_NOT_FOUND(HttpStatus.UNAUTHORIZED, "SESSION401", "세션이 존재하지 않습니다."),
     SESSION_REUSE_DETECTED(HttpStatus.UNAUTHORIZED, "SESSION4011", "토큰 재사용이 감지되어 세션이 만료되었습니다."),
-    SESSION_EXPIRED(HttpStatus.UNAUTHORIZED, "SESSION4012", "세션이 만료되었습니다. 다시 로그인해주세요."),
-
-    // FCM Error
-    FCM_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "FCM404", "존재하지 않는 FCM 토큰입니다.");
+    SESSION_EXPIRED(HttpStatus.UNAUTHORIZED, "SESSION4012", "세션이 만료되었습니다. 다시 로그인해주세요.");
 
     private final HttpStatus httpStatus;
     private final String code; // 클라이언트 식별용 코드 (예: "USER404")
